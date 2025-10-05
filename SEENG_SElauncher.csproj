@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <RestoreAdditionalProjectSources>https://ng.zznty.ru/v3/index.json</RestoreAdditionalProjectSources>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <PackageType>CringePlugin</PackageType>
+    <Authors>CringeLauncher</Authors>
+    <PackageId>Plugin.SEENG_SElauncher</PackageId>
+    <AssemblyName>Plugin.SEENG_SElauncher</AssemblyName>
+    <Title>SEENG</Title>
+    <Description>Engine Sounds</Description>
+    <LangVersion>preview</LangVersion>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CringePlugins" Version="*" ExcludeAssets="runtime; native" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="icon.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+	<Target Name="CopyFiles" AfterTargets="PostBuildEvent">
+		<PropertyGroup>
+			<AppdataPath>$([System.Environment]::GetFolderPath(SpecialFolder.ApplicationData))</AppdataPath>
+		</PropertyGroup>
+		<ItemGroup>
+			<OutputFiles Include="$(OutputPath)\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(OutputFiles)" DestinationFolder="$(AppdataPath)\CringeLauncher\plugins\$(ProjectName)" OverwriteReadOnlyFiles="true" />
+	</Target>
+
+</Project>
