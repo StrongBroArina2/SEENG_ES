@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+  <Id>StrongBroArina2/SEENG_ES</Id>
+  
+  <FriendlyName>SEENG: Engine Sounds!</FriendlyName>
+  
+  <Author>dogboy</Author>
+  
+  <Tooltip>sex</Tooltip>
+
+  <Description>are that you can</Description>
+
+  <Commit>20cfb069bd851f176757943a45695234feb9cdf2</Commit>
+</PluginData>
