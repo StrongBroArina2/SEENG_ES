@@ -10,9 +10,22 @@ namespace SEENG_ES
 {
     public class SEENG_modManager
     {
-        private Dictionary<string, PackConfig> _availablePacks = new Dictionary<string, PackConfig>();
+        public Dictionary<string, PackConfig> _availablePacks = new Dictionary<string, PackConfig>();
         public PackConfig CurrentPackConfig { get; private set; } = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f };
         public string CurrentPack { get; private set; } = "";
+
+
+        public void SetCurrentPack(string prefix)
+        {
+            if (_availablePacks.ContainsKey(prefix))
+            {
+                CurrentPackConfig = _availablePacks[prefix];
+                MyLog.Default.WriteLine($"SEENG_ES: Addon '{prefix}'");
+            }
+            else
+            {
+            }
+        }
 
         public void Init()
         {
@@ -48,12 +61,14 @@ namespace SEENG_ES
                 return;
             }
 
+            // Dev folder
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             if (string.IsNullOrEmpty(appDataPath))
             {
                 return;
             }
 
+            // Mod folder
             string modsPath = Path.Combine(appDataPath, "SpaceEngineers", "Mods");
             if (!Directory.Exists(modsPath))
             {
@@ -61,6 +76,7 @@ namespace SEENG_ES
             }
 
             _availablePacks.Clear();
+            _availablePacks["none"] = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f, ModPath = "" };
 
             foreach (var modItem in MyAPIGateway.Session.Mods)
             {
@@ -72,9 +88,11 @@ namespace SEENG_ES
                 if (File.Exists(configPath))
                 {
                     var config = ParseConfig(configPath);
+                    config.ModPath = modsPath + Path.DirectorySeparatorChar + modFolder;
                     if (!string.IsNullOrEmpty(config.Prefix) && !_availablePacks.ContainsKey(config.Prefix))
                     {
                         _availablePacks[config.Prefix] = config;
+                        MyLog.Default.WriteLine($"SEENG_ES: Alocated Addon '{config.Prefix}' - '{modItem.Name}' in {configPath}.{config.ModPath}");
                     }
                 }
                 else
@@ -88,6 +106,7 @@ namespace SEENG_ES
                         if (File.Exists(altConfigPath))
                         {
                             var config = ParseConfig(altConfigPath);
+                            config.ModPath = steamPath + Path.DirectorySeparatorChar + idFolder;
                             if (!string.IsNullOrEmpty(config.Prefix) && !_availablePacks.ContainsKey(config.Prefix))
                             {
                                 _availablePacks[config.Prefix] = config;
@@ -96,8 +115,6 @@ namespace SEENG_ES
                     }
                 }
             }
-
-
         }
 
         private PackConfig ParseConfig(string configPath)

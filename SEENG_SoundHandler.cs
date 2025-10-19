@@ -46,6 +46,18 @@ namespace SEENG_ES
                 if (_acdcEmitter != null) SEENG_enginesParametrs.UpdateAcdcVolume(_acdcEmitter, speedManager);
                 if (_moveAmbienceEmitter != null) SEENG_enginesParametrs.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
                 if (_stationaryAmbienceEmitter != null) SEENG_enginesParametrs.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
+                if (thrustManager.IsThrusting && !thrustManager.IsPushLooping && (_pushEmitter == null || _pushEmitter.Sound == null || !_pushEmitter.Sound.IsPlaying))
+                {
+                    SEENG_enginesParametrs.StartPushSound(ref _pushEmitter, cockpit, name, thrustManager, prefix);
+                }
+                if (_pushEmitter != null)
+                {
+                    SEENG_enginesParametrs.UpdatePushVolume(_pushEmitter, thrustManager);
+                    if (!_pushEmitter.Sound.IsPlaying)
+                    {
+                        _pushEmitter = null;
+                    }
+                }
             }
             catch (Exception e)
             {

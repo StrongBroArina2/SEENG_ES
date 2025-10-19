@@ -25,6 +25,7 @@ namespace SEENG_ES
         public float MaxEngine50PitchShift { get; set; }
         public List<VolumePoint> EngineVolumes { get; set; }
         public List<VolumePoint> Engine50Volumes { get; set; }
+        public string ModPath { get; set; } = "";
 
         public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null)
         {
@@ -142,6 +143,16 @@ namespace SEENG_ES
         public static void UpdateAcdcVolume(MyEntity3DSoundEmitter emitter, SpeedManager speedManager)
         {
             SND_acdcHandler.UpdateAcdcVolume(emitter, speedManager);
+        }
+
+        public static void StartPushSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, ThrustManager thrustManager, string prefix)
+        {
+            SND_PushHandler.StartPushSound(ref emitter, cockpit, name, thrustManager, prefix);
+        }
+
+        public static void UpdatePushVolume(MyEntity3DSoundEmitter emitter, ThrustManager thrustManager)
+        {
+            SND_PushHandler.UpdatePushVolume(emitter, thrustManager);
         }
         public static void StopEmitter(ref MyEntity3DSoundEmitter emitter)
         {

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Reflection;
+using CringePlugins.Render;
+using CringePlugins.Services;
 using HarmonyLib;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
@@ -11,9 +13,11 @@ namespace SEENG_ES
     public class SEENG_ES : IPlugin
     {
         private SLogic _logic;
+        private SEENGRenderComponent _imguiComponent;
         private SEENG_modManager _modManager;
         private DIGI_DisableShipSounds _disableSoundsComponent;
         private bool _isInitialized = false;
+        private IImGuiImageService _imageService;
 
         public void Init(object gameInstance)
         {
@@ -24,6 +28,9 @@ namespace SEENG_ES
             _modManager = new SEENG_modManager();
             _modManager.Init();
             _disableSoundsComponent = new DIGI_DisableShipSounds();
+            _imguiComponent = new SEENGRenderComponent(_modManager, _logic, _imageService);
+            var renderComponent = new SEENGRenderComponent(_modManager, _logic, _imageService);
+            RenderHandler.Current.RegisterComponent(_imguiComponent);
         }
 
 
@@ -68,6 +75,7 @@ namespace SEENG_ES
                 _modManager?.UnsubscribeFromChat();
                 _modManager?.Dispose();
                 _logic?.Dispose();
+                RenderHandler.Current.UnregisterComponent(_imguiComponent);
                 _isInitialized = false;
                 _disableSoundsComponent = null;
             }

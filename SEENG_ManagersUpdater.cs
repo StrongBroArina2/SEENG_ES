@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Sandbox;
 using Sandbox.ModAPI;
+using Sandbox.ModAPI.Ingame;
+using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
+using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
+using IMyThrust = Sandbox.ModAPI.IMyThrust;
 
 namespace SEENG_ES
 {
@@ -17,9 +23,10 @@ namespace SEENG_ES
             _speedManager = speedManager ?? throw new ArgumentNullException(nameof(speedManager));
             _thrustManager = thrustManager ?? throw new ArgumentNullException(nameof(thrustManager));
         }
+
         public void Update(IMyCockpit cockpit)
         {
-            _thrustManager.Update();
+            _thrustManager.Update(cockpit);
             if (cockpit != null)
             {
                 _speedManager.Update(cockpit);
@@ -29,6 +36,7 @@ namespace SEENG_ES
                 _speedManager.SetNormalizedSpeed(0f);
             }
         }
+
         public SpeedManager SpeedManager => _speedManager;
         public ThrustManager ThrustManager => _thrustManager;
 
@@ -38,32 +46,64 @@ namespace SEENG_ES
             _speedManager.SetNormalizedSpeed(0f);
         }
     }
+
     public class ThrustManager
     {
         public bool IsThrusting { get; private set; } = false;
+        public bool IsPushActive { get; private set; } = false;
+        public Vector3 ControlThrust { get; private set; } = Vector3.Zero;
         public readonly Stopwatch DecayStartTime = new Stopwatch();
 
-        public void Update()
+        public IMyCockpit _currentCockpit;
+        private readonly List<IMySlimBlock> _tempBlocks = new List<IMySlimBlock>();
+
+        public void Update(IMyCockpit cockpit)
         {
-            if (MyAPIGateway.Input == null) return; // this shit is temporary
-            bool forward = MyAPIGateway.Input.IsKeyPress(MyKeys.W);
-            bool back = MyAPIGateway.Input.IsKeyPress(MyKeys.S);
-            bool left = MyAPIGateway.Input.IsKeyPress(MyKeys.A);
-            bool right = MyAPIGateway.Input.IsKeyPress(MyKeys.D);
-            bool up = MyAPIGateway.Input.IsKeyPress(MyKeys.Space);
-            bool down = MyAPIGateway.Input.IsKeyPress(MyKeys.C);
+            if (MyAPIGateway.Input == null) return;
 
-            bool anyThrust = forward || back || left || right || up || down;
-
-            if (anyThrust && !IsThrusting)
-            {
-                IsThrusting = true;
-            }
-            else if (!anyThrust && IsThrusting)
+            if (cockpit == null)
             {
                 IsThrusting = false;
+                IsPushActive = false;
+                ControlThrust = Vector3.Zero;
+                _currentCockpit = null;
+                DecayStartTime.Reset();
+                return;
+            }
+
+            if (_currentCockpit != cockpit)
+            {
+                _currentCockpit = cockpit;
+            }
+
+            var grid = cockpit.CubeGrid;
+            var moveInd = cockpit.MoveIndicator;
+            ControlThrust = moveInd;
+
+            bool anyInput = moveInd.LengthSquared() > 0.01f;
+
+            _tempBlocks.Clear();
+
+            grid.GetBlocks(_tempBlocks, block =>
+            {
+                var thrust = block.FatBlock as IMyThrust;
+                return thrust != null && thrust.IsFunctional && thrust.Enabled;
+            });
+
+            bool hasActiveThrusters = _tempBlocks.Count > 0;
+
+            bool prevThrusting = IsThrusting;
+
+            IsThrusting = anyInput && hasActiveThrusters;
+            IsPushActive = anyInput && hasActiveThrusters;
+
+            if (!IsThrusting && prevThrusting)
+            {
+                IsPushLooping = false;
             }
         }
+
+        public bool IsPushLooping { get; set; } = false;
 
         public void StartDecay()
         {
@@ -73,9 +113,14 @@ namespace SEENG_ES
         public void Reset()
         {
             IsThrusting = false;
+            IsPushActive = false;
+            IsPushLooping = false;
+            ControlThrust = Vector3.Zero;
             DecayStartTime.Reset();
+            _currentCockpit = null;
         }
     }
+
     public class SpeedManager
     {
         public float MaxSpeed { get; set; }
@@ -141,6 +186,7 @@ namespace SEENG_ES
             _lastVelocity = grid.Physics.LinearVelocity;
             _lastTime = currentTime;
         }
+
         public void SetNormalizedSpeed(float value)
         {
             NormalizedSpeed = MathHelper.Clamp(value, 0f, 1f);

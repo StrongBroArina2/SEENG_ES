@@ -4,14 +4,12 @@ namespace SEENG_ES
 {
     public class SLogic
     {
-
         private IMyCockpit _previousCockpit;
         private SessionChecker _sessionChecker;
         private ManagersUpdater _managersUpdater;
         private SoundHandler _soundHandler;
         private int _debugCounter = 0;
         private const int DEBUG_INTERVAL = 1060;
-
 
         public void Init(SEENG_modManager modManager)
         {
