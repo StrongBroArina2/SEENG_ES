@@ -257,7 +257,7 @@ namespace SEENG_ES
                 ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
                 if (ImGui.Button("Order BigMac(requaiers connection to MacApp)", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://youtu.be/dQw4w9WgXcQ", "kks");
                 }
                 ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + 30;
@@ -267,7 +267,7 @@ namespace SEENG_ES
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
                 if (ImGui.Button("Report a problem/suggestion", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
                 ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + 30;
@@ -277,7 +277,7 @@ namespace SEENG_ES
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
                 if (ImGui.Button("WIKI - How to make your own engine", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
                 ImGui.PopStyleColor(3);
 
