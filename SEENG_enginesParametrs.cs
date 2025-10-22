@@ -26,6 +26,9 @@ namespace SEENG_ES
         public List<VolumePoint> EngineVolumes { get; set; }
         public List<VolumePoint> Engine50Volumes { get; set; }
         public string ModPath { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+
+
 
         public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null)
         {

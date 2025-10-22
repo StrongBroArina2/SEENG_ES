@@ -28,6 +28,7 @@ namespace SEENG_ES
         private string _speedInputText = "120";
         private SessionChecker _sessionChecker = new SessionChecker();
         private RefitResult? _pendingRefitResult;
+        private string _selectedPack = "";
 
         public SEENGRenderComponent(SEENG_modManager modManager, SLogic logic, IImGuiImageService imageService = null)
         {
@@ -45,6 +46,7 @@ namespace SEENG_ES
                 {
                     _selectedIndex = 0;
                     UpdateDescription(0);
+                    _selectedPack = "";
                 }
             }
 
@@ -92,20 +94,23 @@ namespace SEENG_ES
                 // Listbox
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("Engines list").X * 0.5f, listboxCenterY - 390));
                 ImGui.Text("Engines list:");
-                var packList = _modManager._availablePacks.Keys.ToList();
+                var currentPacks = _modManager.AvailablePacks;
+                var packList = currentPacks.Keys.ToList();
                 packList.Insert(0, "None");
                 var listboxSize = new System.Numerics.Vector2(720, 720);
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, listboxCenterY - listboxSize.Y * 0.5f));
-                if (ImGui.BeginListBox("##KYS", listboxSize))
+                if (ImGui.BeginListBox("##Packs", listboxSize))
                 {
                     try
                     {
                         for (int i = 0; i < packList.Count; i++)
                         {
                             bool isSelected = (_selectedIndex == i);
-                            if (ImGui.Selectable(packList[i], isSelected))
+                            string displayText = i == 0 ? "None" : currentPacks[packList[i]].DisplayName; // DisplayName с [DEBUG]
+                            if (ImGui.Selectable(displayText, isSelected))
                             {
                                 _selectedIndex = i;
+                                _selectedPack = i == 0 ? "" : packList[i];
                                 UpdateDescription(i);
                             }
                         }
@@ -115,6 +120,7 @@ namespace SEENG_ES
                         ImGui.EndListBox();
                     }
                 }
+
 
                 // Apply
                 var buttonPosY = listboxCenterY + listboxSize.Y * 0.5f + 30;
@@ -135,12 +141,12 @@ namespace SEENG_ES
                     }
                 }
 
-                // Placeholder buttons
+                // Buttons Config
                 var subButtonY = buttonPosY + 143;
                 var subButtonWidth = 350f;
                 var subButtonHeight = 126f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - 720 * 0.5f, subButtonY));
-                if (ImGui.Button("Sound Volume", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+                if (ImGui.Button("Sound Volume(WIP)", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
                     // sound volume
                 }
@@ -257,7 +263,7 @@ namespace SEENG_ES
                 ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
                 if (ImGui.Button("Order BigMac(requaiers connection to MacApp)", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://youtu.be/dQw4w9WgXcQ", "kks");
                 }
                 ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + 30;
@@ -267,7 +273,7 @@ namespace SEENG_ES
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
                 if (ImGui.Button("Report a problem/suggestion", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
                 ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + 30;
@@ -277,7 +283,7 @@ namespace SEENG_ES
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
                 if (ImGui.Button("WIKI - How to make your own engine", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://steamcommunity.com/workshop/filedetails/?id=12345", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
                 ImGui.PopStyleColor(3);
 
@@ -348,10 +354,10 @@ namespace SEENG_ES
 
         private void UpdateDescription(int index)
         {
-            var packList = _modManager._availablePacks.Keys.ToList();
+            var packList = _modManager.AvailablePacks.Keys.ToList();
             packList.Insert(0, "None");
 
-            if (index == 0)
+            if (index == 0 || index >= packList.Count)
             {
                 _descriptionText = "Select an engine...";
                 _bigDescText = "Select an engine...";
@@ -360,20 +366,32 @@ namespace SEENG_ES
 
             string selectedPack = packList[index];
             string modPath = GetModPathForPack(selectedPack);
+            if (string.IsNullOrEmpty(modPath))
+            {
+                _descriptionText = "No description available.";
+                _bigDescText = "No details available.";
+                return;
+            }
+
             string descPath = Path.Combine(modPath, "SEENG_desc.txt");
             _descriptionText = File.Exists(descPath) ? File.ReadAllText(descPath).Trim() : $"... {selectedPack}...";
 
             string bigDescPath = Path.Combine(modPath, "SEENG_descBIG.txt");
             _bigDescText = File.Exists(bigDescPath) ? File.ReadAllText(bigDescPath).Trim() : $"... {selectedPack}...";
+
         }
 
         private string GetModPathForPack(string packPrefix)
         {
             if (string.IsNullOrEmpty(packPrefix) || packPrefix == "None") return "";
 
-            if (_modManager._availablePacks.TryGetValue(packPrefix, out var config))
+            if (_modManager._workshopPacks.TryGetValue(packPrefix, out var workshopConfig))
             {
-                return config.ModPath;
+                return workshopConfig.ModPath;
+            }
+            if (_modManager._debugPacks.TryGetValue(packPrefix, out var debugConfig))
+            {
+                return debugConfig.ModPath;
             }
 
             return "";

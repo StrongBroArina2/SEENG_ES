@@ -1,6 +1,5 @@
 ﻿using Sandbox.Game;
 using VRage.Audio;
-using VRage.Utils;
 
 namespace SEENG_ES
 {
@@ -25,22 +24,22 @@ namespace SEENG_ES
         {
             MyVisualScriptLogicProvider.PlayHudSound(MyGuiSounds.HudAntennaOn);
 
-            if (string.IsNullOrEmpty(selectedPack) || !_modManager._availablePacks.ContainsKey(selectedPack))
+            if (string.IsNullOrEmpty(selectedPack) || !_modManager.AvailablePacks.ContainsKey(selectedPack))
             {
                 return new RefitResult
                 {
                     Success = false,
-                    Message = "o do u like kissen bois"
+                    Message = "o do u like kissen bois."
                 };
             }
 
-            _modManager.SetCurrentPack(selectedPack);
+            _modManager.CurrentPackConfig = _modManager.AvailablePacks[selectedPack];
             _logic.RestartSoundsWithNewPack(_modManager, selectedPack);
 
             return new RefitResult
             {
                 Success = true,
-                Message = $"Engine '{selectedPack}' instaled"
+                Message = $"Addon '{selectedPack}' applied."
             };
         }
     }

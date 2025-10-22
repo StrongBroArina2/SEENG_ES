@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Xml;
+using Microsoft.Win32;
 using Sandbox.ModAPI;
 using VRage.Utils;
 
@@ -11,8 +12,25 @@ namespace SEENG_ES
     public class SEENG_modManager
     {
         public Dictionary<string, PackConfig> _availablePacks = new Dictionary<string, PackConfig>();
-        public PackConfig CurrentPackConfig { get; private set; } = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f };
+        public PackConfig CurrentPackConfig { get; set; } = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f };
         public string CurrentPack { get; private set; } = "";
+        public Dictionary<string, PackConfig> _workshopPacks = new Dictionary<string, PackConfig>();
+        public Dictionary<string, PackConfig> _debugPacks = new Dictionary<string, PackConfig>();
+        private bool _showDebugPacks = false;
+
+        public bool ShowDebugPacks
+        {
+            get => _showDebugPacks;
+            set => _showDebugPacks = value;
+        }
+
+        public Dictionary<string, PackConfig> AvailablePacks
+        {
+            get
+            {
+                return _showDebugPacks ? _debugPacks : _workshopPacks;
+            }
+        }
 
 
         public void SetCurrentPack(string prefix)
@@ -56,65 +74,62 @@ namespace SEENG_ES
 
         public void ScanMods()
         {
-            if (MyAPIGateway.Session?.Mods == null)
-            {
-                return;
-            }
-
-            // Dev folder
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            if (string.IsNullOrEmpty(appDataPath))
-            {
-                return;
-            }
+            if (string.IsNullOrEmpty(appDataPath)) return;
 
-            // Mod folder
             string modsPath = Path.Combine(appDataPath, "SpaceEngineers", "Mods");
             if (!Directory.Exists(modsPath))
             {
                 return;
             }
 
-            _availablePacks.Clear();
-            _availablePacks["none"] = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f, ModPath = "" };
 
-            foreach (var modItem in MyAPIGateway.Session.Mods)
+            _workshopPacks.Clear();
+            _debugPacks.Clear();
+            _workshopPacks["none"] = new PackConfig { Prefix = "", DisplayName = "none", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f, ModPath = "" };
+
+            // Local
+            foreach (string modDir in Directory.GetDirectories(modsPath))
             {
-                if (string.IsNullOrEmpty(modItem.Name)) continue;
-
-                string modFolder = modItem.Name;
-                string configPath = Path.Combine(modsPath, modFolder, "SEENG_Config.sbc");
-
+                string configPath = Path.Combine(modDir, "SEENG_Config.sbc");
                 if (File.Exists(configPath))
                 {
                     var config = ParseConfig(configPath);
-                    config.ModPath = modsPath + Path.DirectorySeparatorChar + modFolder;
-                    if (!string.IsNullOrEmpty(config.Prefix) && !_availablePacks.ContainsKey(config.Prefix))
+                    config.ModPath = modDir;
+                    config.DisplayName = "[DEBUG] " + config.Prefix;
+                    if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
                     {
-                        _availablePacks[config.Prefix] = config;
-                        MyLog.Default.WriteLine($"SEENG_ES: Alocated Addon '{config.Prefix}' - '{modItem.Name}' in {configPath}.{config.ModPath}");
-                    }
-                }
-                else
-                {
-                    if (modItem.PublishedFileId > 0)
-                    {
-                        string steamPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam", "steamapps", "workshop", "content", "244850");
-                        string idFolder = modItem.PublishedFileId.ToString();
-                        string altConfigPath = Path.Combine(steamPath, idFolder, "SEENG_Config.sbc");
-
-                        if (File.Exists(altConfigPath))
-                        {
-                            var config = ParseConfig(altConfigPath);
-                            config.ModPath = steamPath + Path.DirectorySeparatorChar + idFolder;
-                            if (!string.IsNullOrEmpty(config.Prefix) && !_availablePacks.ContainsKey(config.Prefix))
-                            {
-                                _availablePacks[config.Prefix] = config;
-                            }
-                        }
+                        _debugPacks[config.Prefix] = config;
+                        MyLog.Default.WriteLine($"SEENG_ES: Allocated DEBUG Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
                     }
                 }
             }
+
+            // Workshop
+            string workshopPath = Path.GetFullPath(@"..\..\..\workshop\content\244850\");
+            if (!Directory.Exists(workshopPath))
+            {
+                MyLog.Default.WriteLine("Workshop path not found: " + workshopPath);
+                return;
+            }
+
+            foreach (string idDir in Directory.GetDirectories(workshopPath))
+            {
+                string configPath = Path.Combine(idDir, "SEENG_Config.sbc");
+                if (File.Exists(configPath))
+                {
+                    var config = ParseConfig(configPath);
+                    config.ModPath = idDir;
+                    config.DisplayName = config.Prefix;
+                    if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
+                    {
+                        _workshopPacks[config.Prefix] = config;
+                        MyLog.Default.WriteLine($"SEENG_ES: Allocated Workshop Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
+                    }
+                }
+            }
+
+            MyLog.Default.WriteLine($"SEENG_ES: Addons: {_workshopPacks.Count}, Debug addons: {_debugPacks.Count}.");
         }
 
         private PackConfig ParseConfig(string configPath)
@@ -195,6 +210,7 @@ namespace SEENG_ES
                     return new PackConfig
                     {
                         Prefix = prefix,
+                        DisplayName = prefix,
                         MaxEnginePitchShift = maxPitchShift,
                         MaxEngine50PitchShift = max50PitchShift,
                         EngineVolumes = engineVolumes,
@@ -216,26 +232,59 @@ namespace SEENG_ES
             string[] args = message.Split(' ');
             if (args.Length == 1)
             {
-                string packList = "Available addons:\n";
-                foreach (var pack in _availablePacks)
+                var currentPacks = AvailablePacks;
+                string packList = $"Addons ({(_showDebugPacks ? "Debug" : "Workshop")}):\nnone\n";
+                foreach (var pack in currentPacks.OrderBy(k => k.Key))
                 {
-                    packList += pack.Key + "\n";
+                    packList += pack.Value.DisplayName + "\n";
                 }
                 MyAPIGateway.Utilities.ShowMessage("SEENG_ES", packList);
             }
             else if (args.Length == 2)
             {
-                string requestedPrefix = args[1];
-                if (_availablePacks.ContainsKey(requestedPrefix))
+                string cmd = args[1].ToLower();
+                if (cmd == "debug")
                 {
-                    CurrentPackConfig = _availablePacks[requestedPrefix];
-                    MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Addon '{requestedPrefix}' loaded.");
-                    MyLog.Default.WriteLine($"SEENG_ES: Addon '{requestedPrefix}' loaded.");
-                    logic?.RestartSoundsWithNewPack(this, requestedPrefix);
+                    _showDebugPacks = !_showDebugPacks;
+                    string mode = _showDebugPacks ? "Debug (AppData)" : "Workshop";
+                    MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Switched to {mode} addons.");
+                    return;
                 }
-                else
+                else if (cmd == "reload")
                 {
-                    MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Addon '{requestedPrefix}' not loaded as a mod or just not.");
+                    ScanMods();
+                    string currentPrefix = CurrentPackConfig.Prefix;
+                    var currentPacks = AvailablePacks;
+                    if (!string.IsNullOrEmpty(currentPrefix) && currentPacks.ContainsKey(currentPrefix))
+                    {
+                        CurrentPackConfig = currentPacks[currentPrefix];
+                        logic?.RestartSoundsWithNewPack(this, currentPrefix);
+                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", "Configs reloaded.");
+                    }
+                    else
+                    {
+                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", "Configs reloaded..");
+                        CurrentPackConfig = _workshopPacks["none"];
+                        logic?.RestartSoundsWithNewPack(this, "none");
+                    }
+                    return;
+                }
+                else // /seeng prefix
+                {
+                    var currentPacks = AvailablePacks;
+                    string requestedPrefix = args[1];
+                    if (currentPacks.ContainsKey(requestedPrefix))
+                    {
+                        CurrentPackConfig = currentPacks[requestedPrefix];
+                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Addon '{currentPacks[requestedPrefix].DisplayName}'.");
+                        MyLog.Default.WriteLine($"SEENG_ES: Addon set '{requestedPrefix}'.");
+
+                        logic?.RestartSoundsWithNewPack(this, requestedPrefix);
+                    }
+                    else
+                    {
+                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Are u blind?!");
+                    }
                 }
             }
         }

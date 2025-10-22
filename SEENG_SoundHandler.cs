@@ -15,6 +15,11 @@ namespace SEENG_ES
         private MyEntity3DSoundEmitter _stationaryAmbienceEmitter;
         private MyEntity3DSoundEmitter _constantAmbienceEmitter;
 
+        private void UpdateEmitter3D(MyEntity3DSoundEmitter emitter, IMyCockpit cockpit)
+        {
+            if (emitter == null || cockpit == null) return;
+            emitter.Update();
+        }
         public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager)
         {
             if (cockpit == null) return;
@@ -35,6 +40,7 @@ namespace SEENG_ES
                 EnsureEmitterStarted(ref _moveAmbienceEmitter, () => SEENG_enginesParametrs.StartMoveAmbienceSound(ref _moveAmbienceEmitter, cockpit, name, prefix), "MoveAmbience");
                 EnsureEmitterStarted(ref _stationaryAmbienceEmitter, () => SEENG_enginesParametrs.StartStationaryAmbienceSound(ref _stationaryAmbienceEmitter, cockpit, name, prefix), "StationaryAmbience");
                 EnsureEmitterStarted(ref _constantAmbienceEmitter, () => SEENG_enginesParametrs.StartConstantAmbienceSound(ref _constantAmbienceEmitter, cockpit, name, prefix), "ConstantAmbience");
+
                 bool shouldAccelStart = (normalizedSpeed > 0f && speedManager.Acceleration > 0.1f);
                 if (shouldAccelStart && (_acceleration0Emitter == null || !_acceleration0Emitter.Sound.IsPlaying))
                 {
@@ -43,6 +49,14 @@ namespace SEENG_ES
                 SEENG_enginesParametrs.UpdateAcceleration0Sound(ref _acceleration0Emitter, cockpit, name, speedManager, prefix);
                 ForceUpdatePitch(_engineLoopEmitter, normalizedSpeed);
                 ForceUpdatePitch(_engineLoop50Emitter, normalizedSpeed);
+                UpdateEmitter3D(_engineLoopEmitter, cockpit);
+                UpdateEmitter3D(_engineLoop50Emitter, cockpit);
+                UpdateEmitter3D(_acdcEmitter, cockpit);
+                UpdateEmitter3D(_pushEmitter, cockpit);
+                UpdateEmitter3D(_acceleration0Emitter, cockpit);
+                UpdateEmitter3D(_moveAmbienceEmitter, cockpit);
+                UpdateEmitter3D(_stationaryAmbienceEmitter, cockpit);
+                UpdateEmitter3D(_constantAmbienceEmitter, cockpit);
                 if (_acdcEmitter != null) SEENG_enginesParametrs.UpdateAcdcVolume(_acdcEmitter, speedManager);
                 if (_moveAmbienceEmitter != null) SEENG_enginesParametrs.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
                 if (_stationaryAmbienceEmitter != null) SEENG_enginesParametrs.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
@@ -153,6 +167,8 @@ namespace SEENG_ES
                 SEENG_enginesParametrs.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
                 SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
                 SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
+                UpdateEmitter3D(_engineLoopEmitter, cockpit);
+                UpdateEmitter3D(_engineLoop50Emitter, cockpit);
                 ForceUpdatePitch(_engineLoopEmitter, normalizedSpeed);
                 ForceUpdatePitch(_engineLoop50Emitter, normalizedSpeed);
                 if (_acdcEmitter != null) SEENG_enginesParametrs.UpdateAcdcVolume(_acdcEmitter, speedManager);
