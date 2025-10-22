@@ -6,9 +6,12 @@
   
   <Author>dogboy</Author>
   
-  <Tooltip>sex</Tooltip>
+  <Tooltip>Customizable ships sounds, makes your ship alive!</Tooltip>
 
-  <Description>are that you can</Description>
+  <Description>Adds authentic engine sounds that dynamically respond to your ships speed, maneuvering, startup, hull ambiences and more,
+  providing an immersive GaMInG experience. Choose from a diverse selection of engine addons and switch between them
+  on the move. To add more engines, simply enable them as a client mod. Access menu by presing F1.
+  *Works on the servers aswell.</Description>
 
-  <Commit>20cfb069bd851f176757943a45695234feb9cdf2</Commit>
+  <Commit>55804dcb68396e6126b20c7d48696c693564cb62</Commit>
 </PluginData>
