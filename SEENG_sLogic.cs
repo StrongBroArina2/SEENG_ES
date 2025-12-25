@@ -11,6 +11,7 @@ namespace SEENG_ES
         private int _debugCounter = 0;
         private const int DEBUG_INTERVAL = 1060;
 
+
         public void Init(SEENG_modManager modManager)
         {
             _sessionChecker = new SessionChecker();
@@ -56,7 +57,7 @@ namespace SEENG_ES
 
             if (hasSEENGTag && isOccupied)
             {
-                _soundHandler.UpdateAllSounds(cockpit, currentPrefix, _managersUpdater.ThrustManager, _managersUpdater.SpeedManager);
+                _soundHandler.UpdateAllSounds(cockpit, currentPrefix, _managersUpdater.ThrustManager, _managersUpdater.SpeedManager, _managersUpdater.RotationManager);
             }
             else
             {

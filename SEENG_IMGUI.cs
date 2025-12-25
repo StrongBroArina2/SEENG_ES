@@ -12,6 +12,7 @@ using System.IO;
 using VRage.Game.ModAPI;
 using System;
 using VRage.Utils;
+using VRage.Game;
 namespace SEENG_ES
 {
     public class SEENGRenderComponent : IRenderComponent
@@ -29,6 +30,10 @@ namespace SEENG_ES
         private RefitResult? _pendingRefitResult;
         private string _selectedPack = "";
         private DateTime _lastToggleTime = DateTime.MinValue;
+
+        private bool _showVolumeWindow = false;
+        private float _volumeValue = 0f;       
+        private string _volumeInputText = "0";
         public SEENGRenderComponent(SEENG_modManager modManager, SLogic logic, IImGuiImageService imageService = null)
         {
             _modManager = modManager ?? throw new ArgumentNullException(nameof(modManager));
@@ -47,6 +52,17 @@ namespace SEENG_ES
                     UpdateDescription(0);
                     _selectedPack = "";
                 }
+            }
+            var io = ImGui.GetIO();
+            if (_showMenu)
+            {
+                io.MouseDrawCursor = true; 
+                io.WantCaptureMouse = true;    
+                io.WantCaptureKeyboard = true;  
+            }
+            else
+            {
+                io.MouseDrawCursor = false;
             }
             if (!_showMenu) return;
             var displaySize = ImGui.GetIO().DisplaySize;
@@ -133,9 +149,11 @@ namespace SEENG_ES
                 var subButtonY = buttonPosY + windowSize.Y * 0.0883f;
                 var subButtonWidth = windowSize.X * 0.1215f;
                 var subButtonHeight = windowSize.Y * 0.0778f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - windowSize.X * 0.1250f, subButtonY));
-                if (ImGui.Button("Volume(NotWorking)", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, subButtonY));
+                if (ImGui.Button("Volume Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
+                    _showVolumeWindow = true;
+                    _volumeValue = SEENG_VolumeManager.GetCurrentPercent(); // Только здесь!
                 }
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX, subButtonY));
                 if (ImGui.Button("Set Ship Speed", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
@@ -150,6 +168,74 @@ namespace SEENG_ES
                     else
                     {
                         ImGui.TextColored(new System.Numerics.Vector4(1, 0, 0, 1), "No cockpit occupied!");
+                    }
+                }
+                // Volume Setings
+                if (_showVolumeWindow)
+                {
+                    ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
+                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(460, 280), ImGuiCond.Once);
+
+                    bool volumeWindowOpen = true;
+                    if (ImGui.Begin("SEENG SFX Volume", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+                    {
+                        ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.9f, 0.9f, 0.9f, 1f));
+                        ImGui.SetCursorPosX((ImGui.GetWindowWidth() - ImGui.CalcTextSize("Engine Sound Volume").X) * 0.5f);
+                        ImGui.Text("Engine Sound Volume");
+                        ImGui.PopStyleColor();
+                        ImGui.PopFont();
+
+                        ImGui.Spacing();
+                        ImGui.Spacing();
+
+                        // Slider
+                        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - 40f);
+                        if (ImGui.SliderFloat("##volumeSlider", ref _volumeValue, -100f, 100f, "%.0f %"))
+                        {
+                            _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+
+                        ImGui.Spacing();
+
+                        // Exact
+                        ImGui.Text("Exact Percentage:");
+                        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - 40f);
+                        if (ImGui.InputText("##volumeInput", ref _volumeInputText, 10, ImGuiInputTextFlags.CharsDecimal | ImGuiInputTextFlags.EnterReturnsTrue))
+                        {
+                            if (float.TryParse(_volumeInputText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsed))
+                            {
+                                _volumeValue = Math.Clamp(parsed, -100f, 100f);
+                                _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+                            }
+                        }
+
+                        ImGui.Spacing();
+                        ImGui.Spacing();
+
+                        //btn
+                        float volButtonWidth = 140f;
+                        float volSpacing = (ImGui.GetWindowWidth() - (volButtonWidth * 2)) * 0.5f;
+
+                        ImGui.SetCursorPosX(volSpacing);
+                        if (ImGui.Button("Apply", new System.Numerics.Vector2(volButtonWidth, 40)))
+                        {
+                            SEENG_VolumeManager.SetVolume(_volumeValue);
+                            MyAPIGateway.Utilities.ShowNotification($"Volume offset set to {_volumeValue:+0;-0;0} %", 3000, MyFontEnum.Green);
+
+                            _showVolumeWindow = false;
+                        }
+                        ImGui.SameLine();
+                        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - volButtonWidth - volSpacing);
+                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(volButtonWidth, 40)))
+                        {
+                            _showVolumeWindow = false;
+                        }
+                    }
+                    ImGui.End();
+
+                    if (!volumeWindowOpen)
+                    {
+                        _showVolumeWindow = false;
                     }
                 }
                 // Description text
@@ -215,8 +301,8 @@ namespace SEENG_ES
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("How-To").X * 0.5f, rightTopY));
                 ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "How-To");
                 var rightSubY = rightTopY + windowSize.Y * 0.0185f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship'").X * 0.5f, rightSubY));
-                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), "1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship");
+                ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press CTRL + F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship'").X * 0.5f, rightSubY));
+                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), "1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press CTRL + F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship");
                 // News box
                 var newsBoxX = windowSize.X * 0.64f;
                 var newsBoxY = windowSize.Y * 0.35f;

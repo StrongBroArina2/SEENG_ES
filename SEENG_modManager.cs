@@ -100,7 +100,7 @@ namespace SEENG_ES
                     if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
                     {
                         _debugPacks[config.Prefix] = config;
-                        MyLog.Default.WriteLine($"SEENG_ES: Allocated DEBUG Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
+                        //MyLog.Default.WriteLine($"SEENG_ES: Allocated DEBUG Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
                     }
                 }
             }
@@ -124,7 +124,7 @@ namespace SEENG_ES
                     if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
                     {
                         _workshopPacks[config.Prefix] = config;
-                        MyLog.Default.WriteLine($"SEENG_ES: Allocated Workshop Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
+                        //MyLog.Default.WriteLine($"SEENG_ES: Allocated Workshop Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
                     }
                 }
             }

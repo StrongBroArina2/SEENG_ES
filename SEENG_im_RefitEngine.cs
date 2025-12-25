@@ -20,7 +20,7 @@ namespace SEENG_ES
             _logic = logic;
         }
 
-        public RefitResult HandleRefitClick(string selectedPack)
+        public RefitResult HandleRefitClick(string selectedPack, Action onSuccessCloseMenu = null)
         {
             MyVisualScriptLogicProvider.PlayHudSound(MyGuiSounds.HudAntennaOn);
 
@@ -29,10 +29,11 @@ namespace SEENG_ES
                 return new RefitResult
                 {
                     Success = false,
-                    Message = "o do u like kissen bois."
+                    Message = "bomb."
                 };
             }
 
+            onSuccessCloseMenu?.Invoke();
             _modManager.CurrentPackConfig = _modManager.AvailablePacks[selectedPack];
             _logic.RestartSoundsWithNewPack(_modManager, selectedPack);
 
