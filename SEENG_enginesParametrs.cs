@@ -39,7 +39,7 @@ namespace SEENG_ES
             Engine50Volumes = engine50Volumes ?? new List<VolumePoint>();
         }
     }
-    public static class SEENG_enginesParametrs
+    public  class SEENG_enginesParametrs
     {
         public static float MaxEnginePitchShift { get; set; } = 15f;
         public static float MaxEngine50PitchShift { get; set; } = 15f;
@@ -84,14 +84,7 @@ namespace SEENG_ES
 
             emitter.Sound.VolumeMultiplier = 1f;
         }
-        public static void StartEngineLoopSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_EngineLoopHandler.StartEngineLoopSound(ref emitter, cockpit, name, prefix);
-        }
-        public static void UpdateAcceleration0Sound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, SpeedManager speedManager, string prefix)
-        {
-            SND_Acceleration0Handler.UpdateAcceleration0Sound(ref emitter, cockpit, name, speedManager, prefix);
-        }
+
         public static void UpdatePitchForEmitter(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
         {
             if (emitter?.Sound != null && emitter.Sound.IsPlaying)
@@ -101,72 +94,6 @@ namespace SEENG_ES
             }
         }
 
-        public static void UpdatePitchForLoop50(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
-        {
-            if (emitter?.Sound != null && emitter.Sound.IsPlaying)
-            {
-                float adjustedSpeed = normalizedSpeed - 0.5f;
-                float semitones = MaxEngine50PitchShift * adjustedSpeed;
-                emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
-            }
-        }
-
-        // kill this later
-
-
-        public static void StartEngineLoop50Sound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_EngineLoop50Handler.StartEngineLoop50Sound(ref emitter, cockpit, name, prefix);
-        }
-        public static void StartMoveAmbienceSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_MoveAmbienceHandler.StartMoveAmbienceSound(ref emitter, cockpit, name, prefix);
-        }
-
-        public static void UpdateMoveAmbienceVolume(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
-        {
-            SND_MoveAmbienceHandler.UpdateMoveAmbienceVolume(emitter, normalizedSpeed);
-        }
-        public static void StartStationaryAmbienceSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_StationaryAmbienceHandler.StartStationaryAmbienceSound(ref emitter, cockpit, name, prefix);
-        }
-
-        public static void UpdateStationaryAmbienceVolume(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
-        {
-            SND_StationaryAmbienceHandler.UpdateStationaryAmbienceVolume(emitter, normalizedSpeed);
-        }
-        public static void StartConstantAmbienceSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_ConstantAmbienceHandler.StartConstantAmbienceSound(ref emitter, cockpit, name, prefix);
-        }
-
-        public static void StartAcdcSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
-        {
-            SND_acdcHandler.StartAcdcSound(ref emitter, cockpit, name, prefix);
-        }
-
-        public static void UpdateAcdcVolume(MyEntity3DSoundEmitter emitter, SpeedManager speedManager)
-        {
-            SND_acdcHandler.UpdateAcdcVolume(emitter, speedManager);
-        }
-
-        public static void StartPushSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, ThrustManager thrustManager, string prefix)
-        {
-            SND_PushHandler.StartPushSound(ref emitter, cockpit, name, thrustManager, prefix);
-        }
-
-        public static void UpdatePushVolume(MyEntity3DSoundEmitter emitter, ThrustManager thrustManager)
-        {
-            SND_PushHandler.UpdatePushVolume(emitter, thrustManager);
-        }
-        public static void StopEmitter(ref MyEntity3DSoundEmitter emitter)
-        {
-            if (emitter != null)
-            {
-                emitter.StopSound(true);
-                emitter = null;
-            }
-        }
+        // kill this later (i killd it yay)
     }
 }

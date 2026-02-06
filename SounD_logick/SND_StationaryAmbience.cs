@@ -6,9 +6,9 @@ using VRageMath;
 
 namespace SEENG_ES
 {
-    public static class SND_StationaryAmbienceHandler
+    public  class SND_StationaryAmbienceHandler
     {
-        public static void StartStationaryAmbienceSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
+        public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
             var myEntity = (MyEntity)(IMyEntity)cockpit;
             emitter = new MyEntity3DSoundEmitter(myEntity, true, 1f);
@@ -19,7 +19,7 @@ namespace SEENG_ES
             emitter.Sound.VolumeMultiplier = 1f;
         }
 
-        public static void UpdateStationaryAmbienceVolume(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
+        public  void UpdateStationaryAmbienceVolume(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
         {
             if (emitter?.Sound == null || !emitter.Sound.IsPlaying) return;
             float volume = MathHelper.Clamp(1f - (normalizedSpeed / 0.1f), 0f, 1f);

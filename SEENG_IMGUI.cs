@@ -153,21 +153,28 @@ namespace SEENG_ES
                 if (ImGui.Button("Volume Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
                     _showVolumeWindow = true;
-                    _volumeValue = SEENG_VolumeManager.GetCurrentPercent(); // Только здесь!
+                    _volumeValue = SEENG_VolumeManager.GetCurrentPercent();
                 }
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX, subButtonY));
                 if (ImGui.Button("Set Ship Speed", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
-                    var cockpit = _sessionChecker.CheckAndUpdateCockpit(out _, out _);
+                    var cockpit = MyAPIGateway.Session.Player?.Controller?.ControlledEntity as IMyCockpit;
+
                     if (cockpit != null)
                     {
-                        float currentMaxSpeed = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
-                        _speedInputText = (currentMaxSpeed / 1.2f).ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
-                        _showSpeedWindow = true;
+                        if (_sessionChecker.HasSEENGTag(cockpit))
+                        {
+                            float currentMaxSpeed = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
+                            _speedInputText = (currentMaxSpeed / 1.2f).ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+                            _showSpeedWindow = true;
+                        }
+                        else
+                        {
+                            _showSpeedWindow = true;
+                        }
                     }
                     else
                     {
-                        ImGui.TextColored(new System.Numerics.Vector4(1, 0, 0, 1), "No cockpit occupied!");
                     }
                 }
                 // Volume Setings
@@ -372,7 +379,8 @@ namespace SEENG_ES
                         {
                             if (float.TryParse(_speedInputText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float newSpeed) && newSpeed > 0f)
                             {
-                                var cockpit = _sessionChecker.CheckAndUpdateCockpit(out _, out _);
+                                var cockpit = MyAPIGateway.Session.Player?.Controller?.ControlledEntity as IMyCockpit;
+
                                 if (cockpit != null)
                                 {
                                     SEENG_aConfig.UpdateMaxSpeedInCustomData(cockpit, newSpeed);

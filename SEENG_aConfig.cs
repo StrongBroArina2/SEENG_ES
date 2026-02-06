@@ -49,6 +49,33 @@ namespace SEENG_ES
             return 120f;
         }
 
-        
+        public static void UpdatePackPrefixInCustomData(IMyCockpit cockpit, string prefix)
+        {
+            if (cockpit == null) return;
+            MyIni ini = new MyIni();
+            ini.TryParse(cockpit.CustomData);
+            ini.Set("SEENG", "seeng_pack", prefix);
+            cockpit.CustomData = ini.ToString();
+        }
+
+        public static string GetPackPrefixFromCustomData(IMyCockpit cockpit, string defaultPrefix)
+        {
+            if (cockpit == null) return defaultPrefix;
+
+            string customData = cockpit.CustomData;
+            if (string.IsNullOrEmpty(customData)) return defaultPrefix;
+
+            MyIni fullIni = new MyIni();
+            if (!fullIni.TryParse(customData)) return defaultPrefix;
+
+            if (fullIni.ContainsSection("SEENG") && fullIni.ContainsKey("SEENG", "seeng_pack"))
+            {
+                string prefix = fullIni.Get("SEENG", "seeng_pack").ToString();
+                if (!string.IsNullOrEmpty(prefix)) return prefix;
+            }
+
+            return defaultPrefix;
+        }
+
     }
 }

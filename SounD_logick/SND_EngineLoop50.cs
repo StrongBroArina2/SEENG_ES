@@ -6,9 +6,9 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_EngineLoop50Handler
+    public  class SND_EngineLoop50Handler
     {
-        public static void StartEngineLoop50Sound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
+        public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
             var myEntity = (MyEntity)(IMyEntity)cockpit;
             emitter = new MyEntity3DSoundEmitter(myEntity, true, 1f);
@@ -18,7 +18,7 @@ namespace SEENG_ES
             emitter.PlaySound(soundPair);
         }
 
-        public static void UpdatePitchForLoop50(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
+        public  void UpdatePitchForLoop50(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
         {
             if (emitter?.Sound != null && emitter.Sound.IsPlaying)
             {

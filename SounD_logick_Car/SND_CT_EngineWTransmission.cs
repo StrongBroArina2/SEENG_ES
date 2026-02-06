@@ -8,22 +8,22 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_CT_EngineHandler
+    public  class SND_CT_EngineHandler
     {
-        public static MyEntity3DSoundEmitter _idleT;
-        public static MyEntity3DSoundEmitter _base33T;
-        public static MyEntity3DSoundEmitter _base66T;
-        public static MyEntity3DSoundEmitter _base99T;
-        public static MyEntity3DSoundEmitter _load33T;
-        public static MyEntity3DSoundEmitter _load66T;
-        public static MyEntity3DSoundEmitter _load99T;
+        public  MyEntity3DSoundEmitter _idleT;
+        public  MyEntity3DSoundEmitter _base33T;
+        public  MyEntity3DSoundEmitter _base66T;
+        public  MyEntity3DSoundEmitter _base99T;
+        public  MyEntity3DSoundEmitter _load33T;
+        public  MyEntity3DSoundEmitter _load66T;
+        public  MyEntity3DSoundEmitter _load99T;
 
-        private static int _currentGear = 1;
-        private static float _virtualRpm = 800f;
-        private static float _smoothedRpmNorm = 0f;
-        private static float _shiftTimer = 0f;
-        private static bool _isShifting = false;
-        private static bool _shiftUp = false;
+        private  int _currentGear = 1;
+        private  float _virtualRpm = 800f;
+        private  float _smoothedRpmNorm = 0f;
+        private  float _shiftTimer = 0f;
+        private  bool _isShifting = false;
+        private  bool _shiftUp = false;
 
         private const float IDLE_RPM = 800f;
         private const float REDLINE_RPM = 4500f;
@@ -32,14 +32,14 @@ namespace SEENG_ES
 // mix
         private const float RPM_BLEND_WEIGHT = 0.4f;
 
-        private static readonly float[] GearRatios = { 0f, 3.8f, 2.2f, 1.5f, 1.1f, 0.85f };
-        private static readonly float[] UpshiftRpm = { 0f, 4000f, 4100f, 4200f, 4300f, 4400f };
-        private static readonly float[] DownshiftRpm = { 0f, 1800f, 1700f, 1600f, 1500f, 1400f };
+        private  readonly float[] GearRatios = { 0f, 3.8f, 2.2f, 1.5f, 1.1f, 0.85f };
+        private  readonly float[] UpshiftRpm = { 0f, 4000f, 4100f, 4200f, 4300f, 4400f };
+        private  readonly float[] DownshiftRpm = { 0f, 1800f, 1700f, 1600f, 1500f, 1400f };
 
-        private static float _loadIndicator = 0f;
-        private static readonly Stopwatch _loadTimer = new Stopwatch();
+        private  float _loadIndicator = 0f;
+        private  readonly Stopwatch _loadTimer = new Stopwatch();
 
-        public static void Start(IMyCockpit cockpit, string prefix)
+        public  void Start(IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
 
@@ -59,7 +59,7 @@ namespace SEENG_ES
             _loadTimer.Start();
         }
 
-        public static void Update(ThrustManager thrustManager, SpeedManager speedManager)
+        public  void Update(ThrustManager thrustManager, SpeedManager speedManager)
         {
             if (_idleT == null) return;
 
@@ -150,7 +150,7 @@ namespace SEENG_ES
                // MyAPIGateway.Utilities.ShowNotification(debugText, 16, color);
             }
         }
-        private static void ShiftGear(bool up)
+        private  void ShiftGear(bool up)
         {
             _currentGear += up ? 1 : -1;
             _currentGear = MathHelper.Clamp(_currentGear, 1, 5);
@@ -159,7 +159,7 @@ namespace SEENG_ES
             _shiftUp = up;
         }
 
-        public static void Stop()
+        public  void Stop()
         {
             StopEmitter(ref _idleT);
             StopEmitter(ref _base33T);
@@ -176,7 +176,7 @@ namespace SEENG_ES
             _isShifting = false;
         }
 
-        private static void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName, bool looped)
+        private  void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName, bool looped)
         {
             if (emitter != null && emitter.Sound?.IsPlaying == true) return;
             if (emitter != null) { emitter.StopSound(true); emitter = null; }
@@ -189,13 +189,13 @@ namespace SEENG_ES
             }
         }
 
-        private static void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
+        private  void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
         {
             if (emitter?.Sound != null)
                 emitter.Sound.VolumeMultiplier = MathHelper.Clamp(volume, 0f, 1f);
         }
 
-        private static void ApplyLayerPitch(MyEntity3DSoundEmitter emitter, float rpmNorm, float layerRpmNorm)
+        private  void ApplyLayerPitch(MyEntity3DSoundEmitter emitter, float rpmNorm, float layerRpmNorm)
         {
             if (emitter?.Sound == null || !emitter.Sound.IsPlaying) return;
             float ratio = Math.Max(rpmNorm / Math.Max(layerRpmNorm, 0.01f), 0.1f);
@@ -204,13 +204,18 @@ namespace SEENG_ES
             emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
         }
 
-        private static void StopEmitter(ref MyEntity3DSoundEmitter emitter)
+        public void StopAll()
+        {
+            StopEmitter(ref _idleT); StopEmitter(ref _base33T); StopEmitter(ref _base66T);
+            StopEmitter(ref _base99T); StopEmitter(ref _load33T); StopEmitter(ref _load66T); StopEmitter(ref _load99T);
+        }
+        private  void StopEmitter(ref MyEntity3DSoundEmitter emitter)
         {
             emitter?.StopSound(true);
             emitter = null;
         }
 
-        private static float CalcLayerVolume(float norm, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
+        private  float CalcLayerVolume(float norm, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
         {
             if (norm < fadeInStart) return 0f;
             if (norm > fadeOutEnd) return 0f;

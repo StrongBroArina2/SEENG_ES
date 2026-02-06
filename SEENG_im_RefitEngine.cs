@@ -1,4 +1,5 @@
 ﻿using Sandbox.Game;
+using Sandbox.ModAPI;
 using VRage.Audio;
 
 namespace SEENG_ES
@@ -26,21 +27,24 @@ namespace SEENG_ES
 
             if (string.IsNullOrEmpty(selectedPack) || !_modManager.AvailablePacks.ContainsKey(selectedPack))
             {
-                return new RefitResult
-                {
-                    Success = false,
-                    Message = "bomb."
-                };
+                return new RefitResult { Success = false, Message = "Invalid Pack." };
             }
 
-            onSuccessCloseMenu?.Invoke();
+            var cockpit = MyAPIGateway.Session.Player?.Controller?.ControlledEntity as IMyCockpit;
+            if (cockpit == null)
+            {
+                return new RefitResult { Success = false, Message = "Must be in cockpit!" };
+            }
+
+            SEENG_aConfig.UpdatePackPrefixInCustomData(cockpit, selectedPack);
             _modManager.CurrentPackConfig = _modManager.AvailablePacks[selectedPack];
             _logic.RestartSoundsWithNewPack(_modManager, selectedPack);
+            onSuccessCloseMenu?.Invoke();
 
             return new RefitResult
             {
                 Success = true,
-                Message = $"Addon '{selectedPack}' applied."
+                Message = $"Addon '{selectedPack}' applied to ship!"
             };
         }
     }

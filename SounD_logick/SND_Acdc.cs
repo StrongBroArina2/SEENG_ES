@@ -6,9 +6,9 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_acdcHandler
+    public  class SND_acdcHandler
     {
-        public static void StartAcdcSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
+        public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
             var myEntity = (MyEntity)(IMyEntity)cockpit;
             emitter = new MyEntity3DSoundEmitter(myEntity, true, 1f);
@@ -18,7 +18,7 @@ namespace SEENG_ES
             emitter.PlaySound(soundPair);
         }
 
-        public static void UpdateAcdcVolume(MyEntity3DSoundEmitter emitter, SpeedManager speedManager)
+        public  void UpdateAcdcVolume(MyEntity3DSoundEmitter emitter, SpeedManager speedManager)
         {
             if (emitter?.Sound == null || !emitter.Sound.IsPlaying) return;
 

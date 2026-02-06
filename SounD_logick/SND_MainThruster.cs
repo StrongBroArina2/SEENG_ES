@@ -6,27 +6,32 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using System;
 
 namespace SEENG_ES
 {
-    public static class SND_MainThrusterHandler
+    public class SND_MainThrusterHandler
     {
-        public static MyEntity3DSoundEmitter _loopEmitter;
-        public static MyEntity3DSoundEmitter _startEmitter;
-        public static MyEntity3DSoundEmitter _endEmitter;
+        public MyEntity3DSoundEmitter _loopEmitter;
+        public MyEntity3DSoundEmitter _startEmitter;
+        public MyEntity3DSoundEmitter _endEmitter;
 
-        private static string _prefix = "";
-        private static bool _wasThrusting = false;
-        private static float _loopVolume = 0f;
-        private static float _rampTimer = 0f;
-        private static bool _isStartSoundPlaying = false;
+        private string _prefix = "";
+        private bool _wasThrusting = false;
+        private float _loopVolume = 0f;
+        private float _rampTimer = 0f;
+        private bool _isStartSoundPlaying = false;
 
         private const float RAMP_UP_1 = 0.5f;
         private const float RAMP_UP_2 = 3.0f;
         private const float FADE_OUT_TIME = 1.5f;
 
+        public void Start(IMyCockpit cockpit, string prefix)
+        {
+            Restart(cockpit, prefix);
+        }
 
-        public static void Restart(IMyCockpit cockpit, string prefix)
+        public void Restart(IMyCockpit cockpit, string prefix)
         {
             StopAll();
 
@@ -53,7 +58,7 @@ namespace SEENG_ES
             _rampTimer = 0f;
         }
 
-        private static void PlayLoop()
+        private void PlayLoop()
         {
             if (_loopEmitter == null) return;
             string cue = string.IsNullOrEmpty(_prefix) ? "SeengMainThrusterLoop" : $"SeengMainThrusterLoop_{_prefix}";
@@ -61,7 +66,7 @@ namespace SEENG_ES
             bool success = _loopEmitter.PlaySound(pair);
         }
 
-        public static void Update(IMyCockpit cockpit, ThrustManager thrustManager)
+        public void Update(IMyCockpit cockpit, ThrustManager thrustManager)
         {
             if (cockpit == null) return;
 
@@ -77,14 +82,14 @@ namespace SEENG_ES
                            $"Loop Emitter: {(_loopEmitter != null ? "EXISTS" : "NULL")}\n" +
                            $"Cue: SeengMainThrusterLoop{(_prefix == "" ? "" : "_" + _prefix)}";
 
-           // MyAPIGateway.Utilities.ShowNotification(debug, 16, isThrusting ? "White" : "Gray");
+            // MyAPIGateway.Utilities.ShowNotification(debug, 16, isThrusting ? "White" : "Gray");
 
             if (_isStartSoundPlaying && _startEmitter != null && !_startEmitter.IsPlaying)
             {
                 _isStartSoundPlaying = false;
             }
 
-            if (isThrusting && !_wasThrusting && !_isStartSoundPlaying) 
+            if (isThrusting && !_wasThrusting && !_isStartSoundPlaying)
             {
                 PlaySound(_startEmitter, "SeengMainThrusterStart");
                 _isStartSoundPlaying = true;
@@ -139,7 +144,7 @@ namespace SEENG_ES
             _wasThrusting = isThrusting;
         }
 
-        private static void PlaySound(MyEntity3DSoundEmitter emitter, string cueName)
+        private void PlaySound(MyEntity3DSoundEmitter emitter, string cueName)
         {
             if (emitter == null) return;
             string fullCue = string.IsNullOrEmpty(_prefix) ? cueName : $"{cueName}_{_prefix}";
@@ -147,7 +152,7 @@ namespace SEENG_ES
             emitter.PlaySound(pair);
         }
 
-        public static void StopAll()
+        public void StopAll()
         {
             _loopEmitter?.StopSound(true);
             _startEmitter?.StopSound(true);

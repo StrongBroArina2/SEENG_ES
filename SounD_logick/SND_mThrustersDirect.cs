@@ -7,7 +7,7 @@ using static SEENG_ES.SpeedManager;
 
 namespace SEENG_ES
 {
-    public static class SND_mThrustersHandler
+    public  class SND_mThrustersHandler
     {
         public static MyEntity3DSoundEmitter _emitter;
         private static string _currentCue = "";
@@ -23,7 +23,7 @@ namespace SEENG_ES
         private static float _currentVolume = 0f;
         private static bool _wasActive = false;
 
-        public static void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
+        public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
 
@@ -52,7 +52,7 @@ namespace SEENG_ES
             _wasActive = false;
         }
 
-        public static void Update(MyEntity3DSoundEmitter emitter, RotationManager rotationManager, SpeedManager speedManager)
+        public  void Update(MyEntity3DSoundEmitter emitter, RotationManager rotationManager, SpeedManager speedManager)
         {
             if (emitter?.Sound == null || !emitter.Sound.IsPlaying)
                 return;
@@ -96,7 +96,7 @@ namespace SEENG_ES
             }
         }
 
-        public static void Stop()
+        public  void Stop()
         {
             if (_emitter != null)
             {

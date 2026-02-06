@@ -54,7 +54,8 @@ namespace SEENG_ES
 
     public class ThrustManager
     {
-        public bool IsThrusting { get; private set; } = false;
+
+        public bool IsThrusting { get; private set; }
         public bool IsPushActive { get; private set; } = false;
         public Vector3 ControlThrust { get; private set; } = Vector3.Zero;
         public readonly Stopwatch DecayStartTime = new Stopwatch();
@@ -64,47 +65,24 @@ namespace SEENG_ES
 
         public void Update(IMyCockpit cockpit)
         {
-            if (MyAPIGateway.Input == null) return;
-
-            if (cockpit == null)
+            if (cockpit == null || cockpit.CubeGrid == null)
             {
                 IsThrusting = false;
-                IsPushActive = false;
-                ControlThrust = Vector3.Zero;
-                _currentCockpit = null;
-                DecayStartTime.Reset();
                 return;
             }
 
-            if (_currentCockpit != cockpit)
+            var moveIndicator = cockpit.MoveIndicator;
+            bool hasMovementInput = moveIndicator.LengthSquared() > 0.0001f;
+            IsThrusting = hasMovementInput;
+
+            // debug thrusters
+            if (cockpit.IsUnderControl)
             {
-                _currentCockpit = cockpit;
-            }
+                string status = IsThrusting ? "THRUSTING: ON" : "THRUSTING: OFF";
+                var color = IsThrusting ? "Green" : "Red";
 
-            var grid = cockpit.CubeGrid;
-            var moveInd = cockpit.MoveIndicator;
-            ControlThrust = moveInd;
-
-            bool anyInput = moveInd.LengthSquared() > 0.01f;
-
-            _tempBlocks.Clear();
-
-            grid.GetBlocks(_tempBlocks, block =>
-            {
-                var thrust = block.FatBlock as IMyThrust;
-                return thrust != null && thrust.IsFunctional && thrust.Enabled;
-            });
-
-            bool hasActiveThrusters = _tempBlocks.Count > 0;
-
-            bool prevThrusting = IsThrusting;
-
-            IsThrusting = anyInput && hasActiveThrusters;
-            IsPushActive = anyInput && hasActiveThrusters;
-
-            if (!IsThrusting && prevThrusting)
-            {
-                IsPushLooping = false;
+                string debugInfo = $"{status} | V: {moveIndicator.X:F1}, {moveIndicator.Y:F1}, {moveIndicator.Z:F1}";
+               // MyAPIGateway.Utilities.ShowNotification(debugInfo, 16, color);
             }
         }
 
@@ -206,14 +184,15 @@ namespace SEENG_ES
         }
         public void Update(IMyCockpit cockpit)
         {
-            if (cockpit?.CubeGrid?.Physics == null)
-            {
-                SetNormalizedSpeed(0f);
-                return;
-            }
+            if (cockpit?.CubeGrid?.Physics == null) return;
+
+            float currentMaxFromData = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
+            this.MaxSpeed = currentMaxFromData;
+
+            
 
             var grid = cockpit.CubeGrid;
-            float currentTime = (float)(MySandboxGame.TotalGamePlayTimeInMilliseconds / 1000.0);
+            float currentTime = (float)(MySandboxGame.TotalGamePlayTimeInMilliseconds / 1000.0); // max speed update!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if (_lastTime == 0f)
             {
                 _lastTime = currentTime;
@@ -242,7 +221,7 @@ namespace SEENG_ES
                 }
             }
 
-            float speed = grid.Physics.LinearVelocity.Length();
+            float speed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
             SetNormalizedSpeed(MathHelper.Clamp(speed / MaxSpeed, 0f, 1f));
 
             _lastVelocity = grid.Physics.LinearVelocity;

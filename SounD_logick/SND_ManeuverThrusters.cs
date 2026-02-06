@@ -1,5 +1,4 @@
-﻿// SND_ManeuverThrustersHandler.cs — финальная версия с плавным затуханием 0.2 сек
-using Sandbox.Game.Entities;
+﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Data.Audio;
 using VRage.Game.Entity;
@@ -13,7 +12,7 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_ManeuverThrustersHandler
+    public  class SND_ManeuverThrustersHandler
     {
         public class Thruster
         {
@@ -25,14 +24,14 @@ namespace SEENG_ES
             public float FadeTimer = 0f;         
         }
 
-        public static readonly List<Thruster> _thrusters = new List<Thruster>(6);
-        private static readonly Random _rnd = new Random();
-        private static string _currentCue = "";
-        private const float MAX_SPEED_THRESHOLD = 0.15f; // max speed limit to play
+        public  readonly List<Thruster> _thrusters = new List<Thruster>(6);
+        private  readonly Random _rnd = new Random();
+        private  string _currentCue = "";
+        private  float MAX_SPEED_THRESHOLD = 0.25f; // max speed limit to play
 
-        private const float FADE_OUT_TIME = 0.20f; // ← 0.2 fade
+        private const float FADE_OUT_TIME = 0.20f;
 
-        private static readonly Vector3[] OFFSETS = new Vector3[]
+        private  readonly Vector3[] OFFSETS = new Vector3[]
         {
             new Vector3( 0,   0, -20), // 0: BACK
             new Vector3( 0,   0,  20), // 1: FORWARD
@@ -42,7 +41,7 @@ namespace SEENG_ES
             new Vector3( 0, -20,   0)  // 5: DOWN
         };
 
-        public static void Restart(IMyCockpit cockpit, string prefix)
+        public  void Restart(IMyCockpit cockpit, string prefix)
         {
             StopAll();
 
@@ -70,7 +69,7 @@ namespace SEENG_ES
             }
         }
 
-        public static void Update(IMyCockpit cockpit, RotationManager rotationManager, SpeedManager speedManager)
+        public  void Update(IMyCockpit cockpit, RotationManager rotationManager, SpeedManager speedManager)
         {
             if (cockpit == null || rotationManager == null || _thrusters.Count == 0) return;
             float normalizedSpeed = speedManager.NormalizedSpeed;
@@ -114,7 +113,7 @@ namespace SEENG_ES
             UpdateThruster(5, roll < -0.12f, dt); // DOWN
         }
 
-        private static void UpdateThruster(int index, bool shouldBeActive, float dt)
+        private  void UpdateThruster(int index, bool shouldBeActive, float dt)
         {
             var t = _thrusters[index];
 
@@ -158,7 +157,7 @@ namespace SEENG_ES
             }
         }
 
-        public static void StopAll()
+        public  void StopAll()
         {
             foreach (var t in _thrusters)
             {

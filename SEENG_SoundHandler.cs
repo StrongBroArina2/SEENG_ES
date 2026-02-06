@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers.Text;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Utils;
@@ -12,275 +11,157 @@ namespace SEENG_ES
     {
         private MyEntity3DSoundEmitter _engineLoopEmitter;
         private MyEntity3DSoundEmitter _acdcEmitter;
-        private MyEntity3DSoundEmitter _pushEmitter;
-        private MyEntity3DSoundEmitter _acceleration0Emitter;
         private MyEntity3DSoundEmitter _engineLoop50Emitter;
         private MyEntity3DSoundEmitter _moveAmbienceEmitter;
         private MyEntity3DSoundEmitter _stationaryAmbienceEmitter;
         private MyEntity3DSoundEmitter _constantAmbienceEmitter;
         private MyEntity3DSoundEmitter _mThrustersEmitter;
+        private SND_ACDC_ADV _acdcAdvHandler = new SND_ACDC_ADV();
+        private SND_SpeedUpDown _speedUpDown = new SND_SpeedUpDown();
 
+        private readonly SND_EngineLoopHandler _engineLoopHandler = new SND_EngineLoopHandler();
+        private readonly SND_EngineLoop50Handler _engineLoop50Handler = new SND_EngineLoop50Handler();
+        private readonly SND_acdcHandler _acdcHandler = new SND_acdcHandler();
+        private readonly SND_MoveAmbienceHandler _moveAmbienceHandler = new SND_MoveAmbienceHandler();
+        private readonly SND_StationaryAmbienceHandler _stationaryAmbienceHandler = new SND_StationaryAmbienceHandler();
+        private readonly SND_ConstantAmbienceHandler _constantAmbienceHandler = new SND_ConstantAmbienceHandler();
+        private readonly SND_mThrustersHandler _mThrustersHandler = new SND_mThrustersHandler();
+
+        private readonly SND_C_EngineHandler _cEngineHandler = new SND_C_EngineHandler();
+        private readonly SND_CT_EngineHandler _ctEngineHandler = new SND_CT_EngineHandler();
+        private readonly SND_C_TracksHandler _cTracksHandler = new SND_C_TracksHandler();
+        private readonly SND_C_WheelsHandler _cWheelsHandler = new SND_C_WheelsHandler();
+        
+        private readonly SND_MainThrusterHandler _mainThrusterHandler = new SND_MainThrusterHandler();
+        private readonly SND_ManeuverThrustersHandler _maneuverThrustersHandler = new SND_ManeuverThrustersHandler();
+
+        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
+        {
+            if (cockpit == null) return;
+            float normalizedSpeed = speedManager.NormalizedSpeed;
+
+            SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed);
+            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
+
+            _engineLoop50Handler.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
+            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
+
+            _acdcHandler.UpdateAcdcVolume(_acdcEmitter, speedManager);
+            _moveAmbienceHandler.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
+            _stationaryAmbienceHandler.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
+            _mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
+
+            _cEngineHandler.Update(thrustManager, speedManager);
+            _ctEngineHandler.Update(thrustManager, speedManager);
+            _cTracksHandler.Update(speedManager);
+            _cWheelsHandler.Update(speedManager);
+            
+            _mainThrusterHandler.Update(cockpit, thrustManager);
+            _maneuverThrustersHandler.Update(cockpit, rotationManager, speedManager);
+
+            _acdcAdvHandler.Update(cockpit, speedManager);
+            _speedUpDown.Update(cockpit, speedManager);
+
+            UpdateEmitter3D(_engineLoopEmitter, cockpit);
+            UpdateEmitter3D(_acdcEmitter, cockpit);
+            UpdateEmitter3D(_engineLoop50Emitter, cockpit);
+            UpdateEmitter3D(_moveAmbienceEmitter, cockpit);
+            UpdateEmitter3D(_stationaryAmbienceEmitter, cockpit);
+            UpdateEmitter3D(_constantAmbienceEmitter, cockpit);
+            UpdateEmitter3D(_mThrustersEmitter, cockpit);
+        }
+
+        public void RestartAll(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
+        {
+            StopAll();
+
+            if (cockpit == null) return;
+
+            Func<string, bool> SoundExists = (baseName) => {
+                string fullName = string.IsNullOrEmpty(prefix) ? baseName : $"{baseName}_{prefix}";
+                return !MySoundPair.GetCueId(fullName).IsNull;
+            };
+
+            if (SoundExists("SeengEngineLoop"))
+                _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix);
+
+            if (SoundExists("SeengEngineLoop50"))
+                _engineLoop50Handler.Start(ref _engineLoop50Emitter, cockpit, prefix);
+
+            if (SoundExists("SeengEngineAcDc"))
+                _acdcHandler.Start(ref _acdcEmitter, cockpit, prefix);
+
+            if (SoundExists("SeengMoveAmbience"))
+                _moveAmbienceHandler.Start(ref _moveAmbienceEmitter, cockpit, prefix);
+
+            if (SoundExists("SeengStationaryAmbience"))
+                _stationaryAmbienceHandler.Start(ref _stationaryAmbienceEmitter, cockpit, prefix);
+
+            if (SoundExists("SeengAmbienceConstant"))
+                _constantAmbienceHandler.Start(ref _constantAmbienceEmitter, cockpit, prefix);
+
+            if (SoundExists("SeengmThrusters"))
+                _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix);
+
+            if (SoundExists("cSeengIdle"))
+                _cEngineHandler.Start(cockpit, prefix);
+
+            if (SoundExists("cSeengIdleT"))
+                _ctEngineHandler.Start(cockpit, prefix);
+
+            if (SoundExists("cSeengTrack33"))
+                _cTracksHandler.Start(cockpit, prefix);
+
+            if (SoundExists("cSeengWheel33"))
+                _cWheelsHandler.Start(cockpit, prefix);
+
+
+            
+
+            _cEngineHandler.Start(cockpit, prefix);
+            _ctEngineHandler.Start(cockpit, prefix);
+            _mainThrusterHandler.Start(cockpit, prefix);
+            _maneuverThrustersHandler.Restart(cockpit, prefix);
+            _acdcAdvHandler.Start(cockpit, prefix);
+            _speedUpDown.Start(cockpit, prefix);
+        }
 
         private void UpdateEmitter3D(MyEntity3DSoundEmitter emitter, IMyCockpit cockpit)
         {
             if (emitter == null || cockpit == null) return;
             emitter.Update();
         }
-        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
-        {
-            if (cockpit == null) return;
-            string name = cockpit.DisplayNameText ?? "Unnamed";
-            float normalizedSpeed = speedManager.NormalizedSpeed;
-
-            // ──────────────────────────────────────────────────────────────
-            // IM gonna kill myself today ╨ ∙
-            // ──────────────────────────────────────────────────────────────
-            SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdatePitchForEmitter(_acdcEmitter, normalizedSpeed);
-
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
-
-         
-
-            try
-            {
-                EnsureEmitterStarted(ref _engineLoopEmitter, () => SEENG_enginesParametrs.StartEngineLoopSound(ref _engineLoopEmitter, cockpit, name, prefix), "EngineLoop");
-                EnsureEmitterStarted(ref _acdcEmitter, () => SEENG_enginesParametrs.StartAcdcSound(ref _acdcEmitter, cockpit, name, prefix), "ACDC");
-                EnsureEmitterStarted(ref _engineLoop50Emitter, () => SEENG_enginesParametrs.StartEngineLoop50Sound(ref _engineLoop50Emitter, cockpit, name, prefix), "EngineLoop50");
-                EnsureEmitterStarted(ref _moveAmbienceEmitter, () => SEENG_enginesParametrs.StartMoveAmbienceSound(ref _moveAmbienceEmitter, cockpit, name, prefix), "MoveAmbience");
-                EnsureEmitterStarted(ref _stationaryAmbienceEmitter, () => SEENG_enginesParametrs.StartStationaryAmbienceSound(ref _stationaryAmbienceEmitter, cockpit, name, prefix), "StationaryAmbience");
-                EnsureEmitterStarted(ref _constantAmbienceEmitter, () => SEENG_enginesParametrs.StartConstantAmbienceSound(ref _constantAmbienceEmitter, cockpit, name, prefix), "ConstantAmbience");
-                EnsureEmitterStarted(ref _mThrustersEmitter, () => SND_mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix), "mThrusters");
-
-                SND_mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
-                SND_ManeuverThrustersHandler.Update(cockpit, rotationManager, speedManager);
-                SND_MainThrusterHandler.Update(cockpit, thrustManager);
-                SND_C_EngineHandler.Update(thrustManager, speedManager);
-                SND_CT_EngineHandler.Update(thrustManager, speedManager);
-                SND_C_TracksHandler.Update(speedManager);
-
-                bool shouldAccelStart = (normalizedSpeed > 0f && speedManager.Acceleration > 0.1f);
-                if (shouldAccelStart && (_acceleration0Emitter == null || !_acceleration0Emitter.Sound.IsPlaying))
-                {
-                    SND_Acceleration0Handler.StartAcceleration0Sound(ref _acceleration0Emitter, cockpit, name, speedManager, prefix);
-                }
-                SEENG_enginesParametrs.UpdateAcceleration0Sound(ref _acceleration0Emitter, cockpit, name, speedManager, prefix);
-
-                if (thrustManager.IsThrusting && (_pushEmitter == null || !_pushEmitter.Sound?.IsPlaying == true))
-                {
-                    SEENG_enginesParametrs.StartPushSound(ref _pushEmitter, cockpit, name, thrustManager, prefix);
-                }
-                if (_pushEmitter != null)
-                    SEENG_enginesParametrs.UpdatePushVolume(_pushEmitter, thrustManager);
-
-                ForceUpdatePitch(_engineLoopEmitter, normalizedSpeed);
-                ForceUpdatePitch(_engineLoop50Emitter, normalizedSpeed);
-
-                UpdateEmitter3D(_engineLoopEmitter, cockpit);
-                UpdateEmitter3D(_engineLoop50Emitter, cockpit);
-                UpdateEmitter3D(_acdcEmitter, cockpit);
-                UpdateEmitter3D(_pushEmitter, cockpit);
-                UpdateEmitter3D(_acceleration0Emitter, cockpit);
-                UpdateEmitter3D(_moveAmbienceEmitter, cockpit);
-                UpdateEmitter3D(_stationaryAmbienceEmitter, cockpit);
-                UpdateEmitter3D(_constantAmbienceEmitter, cockpit);
-
-                if (_acdcEmitter != null) SEENG_enginesParametrs.UpdateAcdcVolume(_acdcEmitter, speedManager);
-                if (_moveAmbienceEmitter != null) SEENG_enginesParametrs.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
-                if (_stationaryAmbienceEmitter != null) SEENG_enginesParametrs.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
-
-                ApplySeengGlobalVolume(); //volume
-            }
-            catch (Exception e)
-            {
-                MyLog.Default.WriteLine($"SEENG_ES UpdateAllSounds error: {e}");
-            }
-        }
-
-
-
-        private void EnsureEmitterStarted(ref MyEntity3DSoundEmitter emitter, System.Action startAction, string soundType)
-        {
-            bool needsStart = (emitter == null || emitter.Sound == null || !emitter.Sound.IsPlaying);
-            if (needsStart)
-            {
-                try
-                {
-                    startAction();
-                    if (emitter?.Sound?.IsPlaying == true)
-                    {
-                    }
-                    else
-                    {
-                        if (emitter != null)
-                        {
-                            emitter.StopSound(true);
-                            emitter = null;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    if (emitter != null)
-                    {
-                        emitter.StopSound(true);
-                        emitter = null;
-                    }
-                }
-            }
-        }
-
-        private void ForceUpdatePitch(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
-        {
-            if (emitter == null || emitter.Sound == null) return;
-            SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
-            if (emitter == _engineLoop50Emitter)
-            {
-                SEENG_enginesParametrs.UpdatePitchForLoop50(emitter, normalizedSpeed);
-            }
-        }
 
         public void StopAll()
         {
-            StopEmitter(ref _engineLoopEmitter);
-            StopEmitter(ref _acdcEmitter);
-            StopEmitter(ref _pushEmitter);
-            StopEmitter(ref _acceleration0Emitter);
-            StopEmitter(ref _engineLoop50Emitter);
-            StopEmitter(ref _moveAmbienceEmitter);
-            StopEmitter(ref _stationaryAmbienceEmitter);
-            StopEmitter(ref _constantAmbienceEmitter);
-            StopEmitter(ref _mThrustersEmitter);
-            SND_ManeuverThrustersHandler.StopAll();
-            SND_MainThrusterHandler.StopAll();
-            SND_C_EngineHandler.Stop();
-            SND_CT_EngineHandler.Stop();
-            SND_C_TracksHandler.Stop();
+            _engineLoopEmitter?.StopSound(true);
+            _acdcEmitter?.StopSound(true);
+            _engineLoop50Emitter?.StopSound(true);
+            _moveAmbienceEmitter?.StopSound(true);
+            _stationaryAmbienceEmitter?.StopSound(true);
+            _constantAmbienceEmitter?.StopSound(true);
+            _mThrustersEmitter?.StopSound(true);
 
-        }
-
-        private void StopEmitter(ref MyEntity3DSoundEmitter emitter)
-        {
-            if (emitter != null)
-            {
-                emitter.StopSound(true);
-                emitter.StopSound(true);
-                emitter = null;
-            }
-        }
-
-        public void RestartAll(IMyCockpit cockpit, string prefix, SpeedManager speedManager)
-        {
-            if (cockpit == null) return;
-            StopAll();
-            string name = cockpit.DisplayNameText ?? "Unnamed";
-
-
-            try
-            {
-                try { SEENG_enginesParametrs.StartEngineLoopSound(ref _engineLoopEmitter, cockpit, name, prefix); } catch (Exception e) { _engineLoopEmitter = null; }
-                try { SEENG_enginesParametrs.StartAcdcSound(ref _acdcEmitter, cockpit, name, prefix); } catch (Exception e) { _acdcEmitter = null; }
-                try { SEENG_enginesParametrs.StartEngineLoop50Sound(ref _engineLoop50Emitter, cockpit, name, prefix); } catch (Exception e) { _engineLoop50Emitter = null; }
-                try { SEENG_enginesParametrs.StartMoveAmbienceSound(ref _moveAmbienceEmitter, cockpit, name, prefix); } catch (Exception e) { _moveAmbienceEmitter = null; }
-                try { SEENG_enginesParametrs.StartStationaryAmbienceSound(ref _stationaryAmbienceEmitter, cockpit, name, prefix); } catch (Exception e) { _stationaryAmbienceEmitter = null; }
-                try { SEENG_enginesParametrs.StartConstantAmbienceSound(ref _constantAmbienceEmitter, cockpit, name, prefix); } catch (Exception e) { _constantAmbienceEmitter = null; }
-                float normalizedSpeed = speedManager.NormalizedSpeed;
-                SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed);
-                SEENG_enginesParametrs.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
-                SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
-                SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
-                UpdateEmitter3D(_engineLoopEmitter, cockpit);
-                UpdateEmitter3D(_engineLoop50Emitter, cockpit);
-                ForceUpdatePitch(_engineLoopEmitter, normalizedSpeed);
-                ForceUpdatePitch(_engineLoop50Emitter, normalizedSpeed);
-                if (_acdcEmitter != null) SEENG_enginesParametrs.UpdateAcdcVolume(_acdcEmitter, speedManager);
-                if (_moveAmbienceEmitter != null) SEENG_enginesParametrs.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
-                if (_stationaryAmbienceEmitter != null) SEENG_enginesParametrs.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
-                SND_ManeuverThrustersHandler.Restart(cockpit, prefix);
-                SND_MainThrusterHandler.Restart(cockpit, prefix);
-                SND_C_EngineHandler.Start(cockpit, prefix);
-                SND_CT_EngineHandler.Start(cockpit, prefix);
-                // SND_mThrustersHandler.Update(_mThrustersEmitter, rotationManager);
-                SND_C_TracksHandler.Start(cockpit, prefix);
-
-                ApplySeengGlobalVolume();
-            }
-            catch (Exception e)
-            {
-            }
-        }
-
-        private void ApplySeengGlobalVolume()
-        {
-            float mult = SEENG_VolumeManager.GlobalMultiplier;
-
-            if (mult <= 0.0001f || Math.Abs(mult - 1f) < 0.0001f) return;
-
-            void Apply(MyEntity3DSoundEmitter emitter)
-            {
-                if (emitter?.Sound != null && emitter.Sound.IsPlaying)
-                {
-                    emitter.Sound.VolumeMultiplier *= mult;
-
-                    emitter.Sound.VolumeMultiplier = MathHelper.Clamp(emitter.Sound.VolumeMultiplier, 0f, 10f);
-                }
-            }
-
-            Apply(_engineLoopEmitter);
-            Apply(_acdcEmitter);
-            Apply(_pushEmitter);
-            Apply(_acceleration0Emitter);
-            Apply(_engineLoop50Emitter);
-            Apply(_moveAmbienceEmitter);
-            Apply(_stationaryAmbienceEmitter);
-            Apply(_constantAmbienceEmitter);
-
-            Apply(SND_C_EngineHandler._idle);
-            Apply(SND_C_EngineHandler._base33);
-            Apply(SND_C_EngineHandler._base66);
-            Apply(SND_C_EngineHandler._base99);
-            Apply(SND_C_EngineHandler._load33);
-            Apply(SND_C_EngineHandler._load66);
-            Apply(SND_C_EngineHandler._load99);
-
-            Apply(SND_C_EngineHandler._idle);
-            Apply(SND_C_EngineHandler._base33);
-            Apply(SND_C_EngineHandler._base66);
-            Apply(SND_C_EngineHandler._base99);
-            Apply(SND_C_EngineHandler._load33);
-            Apply(SND_C_EngineHandler._load66);
-            Apply(SND_C_EngineHandler._load99);
-
-            Apply(SND_CT_EngineHandler._idleT);
-            Apply(SND_CT_EngineHandler._base33T);
-            Apply(SND_CT_EngineHandler._base66T);
-            Apply(SND_CT_EngineHandler._base99T);
-            Apply(SND_CT_EngineHandler._load33T);
-            Apply(SND_CT_EngineHandler._load66T);
-            Apply(SND_CT_EngineHandler._load99T);
-
-            Apply(SND_C_TracksHandler._track33);
-            Apply(SND_C_TracksHandler._track66);
-            Apply(SND_C_TracksHandler._track99);
-
-            Apply(SND_MainThrusterHandler._loopEmitter);
-            Apply(SND_MainThrusterHandler._startEmitter);
-            Apply(SND_MainThrusterHandler._endEmitter);
-            Apply(SND_mThrustersHandler._emitter);
-            foreach (var thruster in SND_ManeuverThrustersHandler._thrusters)
-            {
-                Apply(thruster.Emitter);
-            }
+            _cEngineHandler.StopAll();
+            _ctEngineHandler.StopAll();
+            _cTracksHandler.StopAll();
+            _cWheelsHandler.StopAll();
+            _mainThrusterHandler.StopAll();
+            _maneuverThrustersHandler.StopAll();
+            _acdcAdvHandler.StopAll();
+            _speedUpDown.StopAll();
         }
 
         public void Dispose()
         {
             StopAll();
+            _engineLoopEmitter = null;
+            _acdcEmitter = null;
+            _engineLoop50Emitter = null;
+            _moveAmbienceEmitter = null;
+            _stationaryAmbienceEmitter = null;
+            _constantAmbienceEmitter = null;
+            _mThrustersEmitter = null;
         }
     }
 }

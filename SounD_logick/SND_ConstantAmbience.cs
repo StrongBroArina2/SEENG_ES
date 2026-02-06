@@ -5,9 +5,9 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_ConstantAmbienceHandler
+    public  class SND_ConstantAmbienceHandler
     {
-        public static void StartConstantAmbienceSound(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string name, string prefix)
+        public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
             var myEntity = (MyEntity)(IMyEntity)cockpit;
             emitter = new MyEntity3DSoundEmitter(myEntity, true, 1f);

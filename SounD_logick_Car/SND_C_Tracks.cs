@@ -6,13 +6,13 @@ using VRageMath;
 
 namespace SEENG_ES
 {
-    public static class SND_C_TracksHandler
+    public  class SND_C_TracksHandler
     {
-        public static MyEntity3DSoundEmitter _track33;
-        public static MyEntity3DSoundEmitter _track66;
-        public static MyEntity3DSoundEmitter _track99;
+        public  MyEntity3DSoundEmitter _track33;
+        public  MyEntity3DSoundEmitter _track66;
+        public  MyEntity3DSoundEmitter _track99;
 
-        public static void Start(IMyCockpit cockpit, string prefix)
+        public  void Start(IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
 
@@ -23,7 +23,7 @@ namespace SEENG_ES
             CreateEmitter(ref _track99, entity, $"cSeengTrack99_{prefix}");
         }
 
-        public static void Update(SpeedManager speedManager)
+        public  void Update(SpeedManager speedManager)
         {
             if (_track33 == null) return; 
             float speed = speedManager.NormalizedSpeed;
@@ -36,14 +36,14 @@ namespace SEENG_ES
             SetVolume(_track99, vol99);
         }
 
-        public static void Stop()
+        public  void Stop()
         {
             StopEmitter(ref _track33);
             StopEmitter(ref _track66);
             StopEmitter(ref _track99);
         }
 
-        private static void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName)
+        private  void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName)
         {
             if (emitter != null && emitter.Sound?.IsPlaying == true)
                 return;
@@ -69,18 +69,23 @@ namespace SEENG_ES
             }
         }
 
-        private static void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
+        private  void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
         {
             if (emitter?.Sound != null)
                 emitter.Sound.VolumeMultiplier = MathHelper.Clamp(volume, 0f, 1f);
         }
 
-        private static void StopEmitter(ref MyEntity3DSoundEmitter emitter)
+        private  void StopEmitter(ref MyEntity3DSoundEmitter emitter)
         {
             emitter?.StopSound(true);
             emitter = null;
         }
-        private static float CalcLayerVolume(float speed, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
+
+        public void StopAll()
+        {
+            StopEmitter(ref _track33); StopEmitter(ref _track66); StopEmitter(ref _track99);
+        }
+        private  float CalcLayerVolume(float speed, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
         {
             if (speed < fadeInStart) return 0f;
             if (speed > fadeOutEnd) return 0f;

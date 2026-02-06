@@ -9,33 +9,30 @@ using VRage.ModAPI;
 
 namespace SEENG_ES
 {
-    public static class SND_C_EngineHandler
+    public  class SND_C_EngineHandler
     {
-        public static MyEntity3DSoundEmitter _idle;
-        public static MyEntity3DSoundEmitter _base33;
-        public static MyEntity3DSoundEmitter _base66;
-        public static MyEntity3DSoundEmitter _base99;
-        public static MyEntity3DSoundEmitter _load33;
-        public static MyEntity3DSoundEmitter _load66;
-        public static MyEntity3DSoundEmitter _load99;
+        public  MyEntity3DSoundEmitter _idle;
+        public  MyEntity3DSoundEmitter _base33;
+        public  MyEntity3DSoundEmitter _base66;
+        public  MyEntity3DSoundEmitter _base99;
+        public  MyEntity3DSoundEmitter _load33;
+        public  MyEntity3DSoundEmitter _load66;
+        public  MyEntity3DSoundEmitter _load99;
 
-        private static readonly Stopwatch _loadRampTimer = new Stopwatch();
-        private static float _currentLoadRpm = 0f;
-        private static bool _isRampingUp = false;
+        private  readonly Stopwatch _loadRampTimer = new Stopwatch();
+        private  float _currentLoadRpm = 0f;
+        private  bool _isRampingUp = false;
 
-        //RPM fo layers
         private const float RPM33 = 0.33f;
         private const float RPM66 = 0.66f;
         private const float RPM99 = 0.99f;
 
-        // Max pirch fo layers mixing
         private const float MAX_PITCH_SEMITONES = 8f;
         private const float MIN_PITCH_SEMITONES = -2f;
 
-        public static void Start(IMyCockpit cockpit, string prefix)
+        public  void Start(IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
-
             var entity = (MyEntity)(IMyEntity)cockpit;
 
             CreateEmitter(ref _idle, entity, $"cSeengEngineIdle_{prefix}", true);
@@ -47,7 +44,7 @@ namespace SEENG_ES
             CreateEmitter(ref _load99, entity, $"cSeengEngineLoad99_{prefix}", true);
         }
 
-        public static void Update(ThrustManager thrustManager, SpeedManager speedManager)
+        public  void Update(ThrustManager thrustManager, SpeedManager speedManager)
         {
             if (_idle == null) return; 
 
@@ -114,7 +111,7 @@ namespace SEENG_ES
             }
         }
 
-        public static void Stop()
+        public  void Stop()
         {
             StopEmitter(ref _idle);
             StopEmitter(ref _base33);
@@ -129,7 +126,7 @@ namespace SEENG_ES
             _isRampingUp = false;
         }
 
-        private static void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName, bool looped)
+        private  void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName, bool looped)
         {
             if (emitter != null && emitter.Sound?.IsPlaying == true)
                 return;
@@ -155,13 +152,13 @@ namespace SEENG_ES
             }
         }
 
-        private static void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
+        private  void SetVolume(MyEntity3DSoundEmitter emitter, float volume)
         {
             if (emitter?.Sound != null)
                 emitter.Sound.VolumeMultiplier = MathHelper.Clamp(volume, 0f, 1f);
         }
 
-        private static void ApplyLayerPitch(MyEntity3DSoundEmitter emitter, float speed, float layerRpm)
+        private  void ApplyLayerPitch(MyEntity3DSoundEmitter emitter, float speed, float layerRpm)
         {
             if (emitter?.Sound != null && emitter.Sound.IsPlaying)
             {
@@ -172,12 +169,18 @@ namespace SEENG_ES
             }
         }
 
-        private static void StopEmitter(ref MyEntity3DSoundEmitter emitter)
+        public void StopAll()
+        {
+            StopEmitter(ref _idle); StopEmitter(ref _base33); StopEmitter(ref _base66);
+            StopEmitter(ref _base99); StopEmitter(ref _load33); StopEmitter(ref _load66); StopEmitter(ref _load99);
+        }
+
+        private  void StopEmitter(ref MyEntity3DSoundEmitter emitter)
         {
             emitter?.StopSound(true);
             emitter = null;
         }
-        private static float CalcLayerVolume(float speed, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
+        private  float CalcLayerVolume(float speed, float fadeInStart, float fadeInEnd, float fadeOutStart, float fadeOutEnd)
         {
             if (speed < fadeInStart) return 0f;
             if (speed > fadeOutEnd) return 0f;
