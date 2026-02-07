@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Utils;
@@ -74,6 +74,8 @@ namespace SEENG_ES
         public void RestartAll(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
         {
             StopAll();
+            Dispose();
+
 
             if (cockpit == null) return;
 
@@ -103,10 +105,10 @@ namespace SEENG_ES
             if (SoundExists("SeengmThrusters"))
                 _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix);
 
-            if (SoundExists("cSeengIdle"))
+            if (SoundExists("cSeengEngineIdle"))
                 _cEngineHandler.Start(cockpit, prefix);
 
-            if (SoundExists("cSeengIdleT"))
+            if (SoundExists("ctSeengEngineIdle"))
                 _ctEngineHandler.Start(cockpit, prefix);
 
             if (SoundExists("cSeengTrack33"))
@@ -115,15 +117,22 @@ namespace SEENG_ES
             if (SoundExists("cSeengWheel33"))
                 _cWheelsHandler.Start(cockpit, prefix);
 
+            if (SoundExists("SeengMainThrusterLoop"))
+                _mainThrusterHandler.Start(cockpit, prefix);
 
-            
+            if (SoundExists("SeengACDCacc"))
+                _acdcAdvHandler.Start(cockpit, prefix);
 
-            _cEngineHandler.Start(cockpit, prefix);
-            _ctEngineHandler.Start(cockpit, prefix);
-            _mainThrusterHandler.Start(cockpit, prefix);
-            _maneuverThrustersHandler.Restart(cockpit, prefix);
-            _acdcAdvHandler.Start(cockpit, prefix);
-            _speedUpDown.Start(cockpit, prefix);
+            if (SoundExists("SeengSpeedUP"))
+                _speedUpDown.Start(cockpit, prefix);
+
+            if (SoundExists("SeengManeuverThrusters"))
+                _maneuverThrustersHandler.Restart(cockpit, prefix);
+
+
+
+
+
         }
 
         private void UpdateEmitter3D(MyEntity3DSoundEmitter emitter, IMyCockpit cockpit)
@@ -162,6 +171,8 @@ namespace SEENG_ES
             _stationaryAmbienceEmitter = null;
             _constantAmbienceEmitter = null;
             _mThrustersEmitter = null;
+
+
         }
     }
 }
