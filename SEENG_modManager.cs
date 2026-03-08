@@ -78,15 +78,10 @@ namespace SEENG_ES
             if (string.IsNullOrEmpty(appDataPath)) return;
 
             string modsPath = Path.Combine(appDataPath, "SpaceEngineers", "Mods");
-            if (!Directory.Exists(modsPath))
-            {
-                return;
-            }
+            if (!Directory.Exists(modsPath)) return;
 
+            _availablePacks.Clear();
 
-            _workshopPacks.Clear();
-            _debugPacks.Clear();
-            _workshopPacks["none"] = new PackConfig { Prefix = "", DisplayName = "none", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f, ModPath = "" };
 
             // Local
             foreach (string modDir in Directory.GetDirectories(modsPath))
@@ -129,6 +124,14 @@ namespace SEENG_ES
                 }
             }
 
+            if (!_availablePacks.ContainsKey("ImprovedVanilla"))
+            {
+                MyLog.Default.WriteLine(
+                    "SEENG_ES: CRITICAL: Required pack 'ImprovedVanilla' not found! " +
+                    "Please install the SEENG Engine sounds mod or client mod."
+                );
+            }
+
             MyLog.Default.WriteLine($"SEENG_ES: Addons: {_workshopPacks.Count}, Debug addons: {_debugPacks.Count}.");
         }
 
@@ -139,6 +142,7 @@ namespace SEENG_ES
                 using (XmlReader reader = XmlReader.Create(configPath))
                 {
                     string prefix = "";
+                    string friendlyName = "";
                     float maxPitchShift = 15f;
                     float max50PitchShift = 15f;
                     List<VolumePoint> engineVolumes = new List<VolumePoint>();
@@ -155,6 +159,11 @@ namespace SEENG_ES
                             {
                                 reader.Read();
                                 prefix = reader.Value.Trim();
+                            }
+                            else if (reader.Name == "FriendlyName")
+                            {
+                                reader.Read();
+                                friendlyName = reader.Value.Trim();
                             }
                             else if (currentElement == "MaxEnginePitchShift")
                             {
@@ -211,6 +220,7 @@ namespace SEENG_ES
                     {
                         Prefix = prefix,
                         DisplayName = prefix,
+                        FriendlyName = friendlyName,
                         MaxEnginePitchShift = maxPitchShift,
                         MaxEngine50PitchShift = max50PitchShift,
                         EngineVolumes = engineVolumes,
@@ -233,7 +243,7 @@ namespace SEENG_ES
             if (args.Length == 1)
             {
                 var currentPacks = AvailablePacks;
-                string packList = $"Addons ({(_showDebugPacks ? "Debug" : "Workshop")}):\nnone\n";
+                string packList = $"Addons ({(_showDebugPacks ? "Debug" : "Workshop")}):\n";
                 foreach (var pack in currentPacks.OrderBy(k => k.Key))
                 {
                     packList += pack.Value.DisplayName + "\n";
@@ -263,9 +273,9 @@ namespace SEENG_ES
                     }
                     else
                     {
-                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", "Configs reloaded..");
-                        CurrentPackConfig = _workshopPacks["none"];
-                        logic?.RestartSoundsWithNewPack(this, "none");
+                        CurrentPackConfig = currentPacks["ImprovedVanilla"];
+                        logic?.RestartSoundsWithNewPack(this, "ImprovedVanilla");
+                        MyAPIGateway.Utilities.ShowMessage("SEENG_ES", "Configs reloaded. Fallback to ImprovedVanilla.");
                     }
                     return;
                 }

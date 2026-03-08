@@ -104,7 +104,6 @@ namespace SEENG_ES
                 // Listbox
                 var currentPacks = _modManager.AvailablePacks;
                 var packList = currentPacks.Keys.ToList();
-                packList.Insert(0, "None");
                 var listboxSize = new System.Numerics.Vector2(windowSize.X * 0.2500f, windowSize.Y * 0.4444f);
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, listboxCenterY - listboxSize.Y * 0.5f));
                 if (ImGui.BeginListBox("##Packs", listboxSize))
@@ -418,13 +417,6 @@ namespace SEENG_ES
         private void UpdateDescription(int index)
         {
             var packList = _modManager.AvailablePacks.Keys.ToList();
-            packList.Insert(0, "None");
-            if (index == 0 || index >= packList.Count)
-            {
-                _descriptionText = "Select an engine...";
-                _bigDescText = "Select an engine...";
-                return;
-            }
             string selectedPack = packList[index];
             string modPath = GetModPathForPack(selectedPack);
             if (string.IsNullOrEmpty(modPath))

@@ -27,6 +27,7 @@ namespace SEENG_ES
         public List<VolumePoint> Engine50Volumes { get; set; }
         public string ModPath { get; set; } = "";
         public string DisplayName { get; set; } = "";
+        public string FriendlyName { get; set; } = "";
 
 
 

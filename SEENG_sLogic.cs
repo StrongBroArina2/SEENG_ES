@@ -35,7 +35,7 @@ namespace SEENG_ES
                 if (session.Cockpit == null ||
                     session.Cockpit.Closed ||
                     !_sessionChecker.HasSEENGTag(session.Cockpit) ||
-                    Vector3D.DistanceSquared(session.Cockpit.GetPosition(), listenerPos) > 650 * 650) //sound sync dist!!!!!!!
+                    Vector3D.DistanceSquared(session.Cockpit.GetPosition(), listenerPos) > 950 * 950) //sound sync dist!!!!!!!
                 {
                     toRemove.Add(kvp.Key);
                     continue;
@@ -103,6 +103,11 @@ namespace SEENG_ES
             _activeSessions.Clear();
             ScanNearbyShips(modManager);
             _scanCounter = 60;
+
+            if (string.IsNullOrEmpty(newPrefix) || !modManager._availablePacks.ContainsKey(newPrefix))
+            {
+                newPrefix = "ImprovedVanilla";
+            }
         }
 
         public void Dispose()
