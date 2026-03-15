@@ -35,16 +35,16 @@ namespace SEENG_ES
         private readonly SND_MainThrusterHandler _mainThrusterHandler = new SND_MainThrusterHandler();
         private readonly SND_ManeuverThrustersHandler _maneuverThrustersHandler = new SND_ManeuverThrustersHandler();
 
-        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
+        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, PackConfig config)
         {
             if (cockpit == null) return;
             float normalizedSpeed = speedManager.NormalizedSpeed;
 
-            SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, SEENG_enginesParametrs.EngineVolumes);
+            SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed, config.MaxEnginePitchShift);
+            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, config.EngineVolumes);
 
-            _engineLoop50Handler.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed);
-            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, SEENG_enginesParametrs.Engine50Volumes);
+            _engineLoop50Handler.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed, config.MaxEngine50PitchShift);
+            SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, config.Engine50Volumes);
 
             _acdcHandler.UpdateAcdcVolume(_acdcEmitter, speedManager);
             _moveAmbienceHandler.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
@@ -75,64 +75,31 @@ namespace SEENG_ES
         {
             StopAll();
             Dispose();
-
-
-            if (cockpit == null) return;
+            if (cockpit == null || cockpit.MarkedForClose || cockpit.Closed) return;
 
             Func<string, bool> SoundExists = (baseName) => {
                 string fullName = string.IsNullOrEmpty(prefix) ? baseName : $"{baseName}_{prefix}";
                 return !MySoundPair.GetCueId(fullName).IsNull;
             };
 
-            if (SoundExists("SeengEngineLoop"))
-                _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix);
+            try { if (SoundExists("SeengEngineLoop")) _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error EngineLoop: " + e.Message); }
+            try { if (SoundExists("SeengEngineLoop50")) _engineLoop50Handler.Start(ref _engineLoop50Emitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Loop50: " + e.Message); }
+            try { if (SoundExists("SeengEngineAcDc")) _acdcHandler.Start(ref _acdcEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error AcDc: " + e.Message); }
+            try { if (SoundExists("SeengMoveAmbience")) _moveAmbienceHandler.Start(ref _moveAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error MoveAmbience: " + e.Message); }
 
-            if (SoundExists("SeengEngineLoop50"))
-                _engineLoop50Handler.Start(ref _engineLoop50Emitter, cockpit, prefix);
+            try { if (SoundExists("SeengStationaryAmbience")) _stationaryAmbienceHandler.Start(ref _stationaryAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error StationaryAmbience: " + e.Message); }
 
-            if (SoundExists("SeengEngineAcDc"))
-                _acdcHandler.Start(ref _acdcEmitter, cockpit, prefix);
+            try { if (SoundExists("SeengAmbienceConstant")) _constantAmbienceHandler.Start(ref _constantAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Constant: " + e.Message); }
+            try { if (SoundExists("SeengmThrusters")) _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error mThrusters: " + e.Message); }
 
-            if (SoundExists("SeengMoveAmbience"))
-                _moveAmbienceHandler.Start(ref _moveAmbienceEmitter, cockpit, prefix);
-
-            if (SoundExists("SeengStationaryAmbience"))
-                _stationaryAmbienceHandler.Start(ref _stationaryAmbienceEmitter, cockpit, prefix);
-
-            if (SoundExists("SeengAmbienceConstant"))
-                _constantAmbienceHandler.Start(ref _constantAmbienceEmitter, cockpit, prefix);
-
-            if (SoundExists("SeengmThrusters"))
-                _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix);
-
-            if (SoundExists("cSeengEngineIdle"))
-                _cEngineHandler.Start(cockpit, prefix);
-
-            if (SoundExists("ctSeengEngineIdle"))
-                _ctEngineHandler.Start(cockpit, prefix);
-
-            if (SoundExists("cSeengTrack33"))
-                _cTracksHandler.Start(cockpit, prefix);
-
-            if (SoundExists("cSeengWheel33"))
-                _cWheelsHandler.Start(cockpit, prefix);
-
-            if (SoundExists("SeengMainThrusterLoop"))
-                _mainThrusterHandler.Start(cockpit, prefix);
-
-            if (SoundExists("SeengACDCacc"))
-                _acdcAdvHandler.Start(cockpit, prefix);
-
-            if (SoundExists("SeengSpeedUP"))
-                _speedUpDown.Start(cockpit, prefix);
-
-            if (SoundExists("SeengManeuverThrusters"))
-                _maneuverThrustersHandler.Restart(cockpit, prefix);
-
-
-
-
-
+            try { if (SoundExists("cSeengEngineIdle")) _cEngineHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("ctSeengEngineIdle")) _ctEngineHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("cSeengTrack33")) _cTracksHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("cSeengWheel33")) _cWheelsHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("SeengMainThrusterLoop")) _mainThrusterHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("SeengACDCacc")) _acdcAdvHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("SeengSpeedUP")) _speedUpDown.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("SeengManeuverThrusters")) _maneuverThrustersHandler.Restart(cockpit, prefix); } catch { }
         }
 
         private void UpdateEmitter3D(MyEntity3DSoundEmitter emitter, IMyCockpit cockpit)
@@ -174,5 +141,7 @@ namespace SEENG_ES
 
 
         }
+
+
     }
 }

@@ -12,35 +12,49 @@ namespace SEENG_ES
         public string ActivePrefix;
         private int _logicTick = 0;
         public bool NeedsRestart = false;
+        public PackConfig Config;
 
-        public ShipSoundSession(IMyCockpit cockpit, string prefix)
+        public ShipSoundSession(IMyCockpit cockpit, PackConfig config)
         {
             Cockpit = cockpit;
-            ActivePrefix = prefix;
+            ActivePrefix = config.Prefix;
+            Config = config;
             Handler = new SoundHandler();
 
             float maxSpeed = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
             Managers = new ManagersUpdater(new SpeedManager(maxSpeed), new ThrustManager());
+
+            string dataPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, null);
+            if (string.IsNullOrEmpty(dataPrefix))
+            {
+                dataPrefix = "ImprovedVanilla";
+            }
         }
 
         public void Update(SEENG_modManager modManager)
         {
             if (Cockpit == null || Cockpit.Closed) return;
 
-            var listenerPos = MyAPIGateway.Session.Camera?.WorldMatrix.Translation ?? Vector3D.Zero;
-
-            // update time, addon
             if (_logicTick++ % 100 == 0)
             {
-                string currentDataPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(Cockpit, modManager.CurrentPackConfig.Prefix);
+                string currentDataPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(Cockpit, null);
+                if (string.IsNullOrEmpty(currentDataPrefix))
+                {
+                    currentDataPrefix = "ImprovedVanilla";
+                }
+
                 if (currentDataPrefix != ActivePrefix)
                 {
                     ActivePrefix = currentDataPrefix;
                     Handler.RestartAll(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager);
                 }
             }
+
+            PackConfig shipConfig = modManager.AvailablePacks.ContainsKey(ActivePrefix)
+                            ? modManager.AvailablePacks[ActivePrefix]
+                            : modManager.CurrentPackConfig;
             Managers.Update(Cockpit);
-            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager);
+            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, shipConfig);
         }
 
 

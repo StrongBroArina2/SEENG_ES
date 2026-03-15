@@ -1,4 +1,5 @@
-﻿using Sandbox.ModAPI;
+﻿using Sandbox.Engine.Utils;
+using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -19,37 +20,35 @@ namespace SEENG_ES
         public void Update(SEENG_modManager modManager)
         {
             if (MyAPIGateway.Session == null) return;
-
-            var listenerPos = MyAPIGateway.Session.Camera?.WorldMatrix.Translation ?? Vector3D.Zero;
-
-            if (_scanCounter++ % 60 == 0) //scan time
+            if (_scanCounter++ % 60 == 0)
             {
                 ScanNearbyShips(modManager);
             }
 
-            List<long> toRemove = new List<long>();
+            _toRemove.Clear();
+
             foreach (var kvp in _activeSessions)
             {
                 var session = kvp.Value;
 
-                if (session.Cockpit == null ||
-                    session.Cockpit.Closed ||
-                    !_sessionChecker.HasSEENGTag(session.Cockpit) ||
-                    Vector3D.DistanceSquared(session.Cockpit.GetPosition(), listenerPos) > 950 * 950) //sound sync dist!!!!!!!
+                if (session.Cockpit == null || session.Cockpit.Closed || !session.Cockpit.IsWorking)
                 {
-                    toRemove.Add(kvp.Key);
+                    _toRemove.Add(kvp.Key);
                     continue;
                 }
-
                 session.Update(modManager);
             }
 
-            foreach (var id in toRemove)
+            foreach (var id in _toRemove)
             {
-                _activeSessions[id].Dispose();
-                _activeSessions.Remove(id);
+                if (_activeSessions.ContainsKey(id))
+                {
+                    _activeSessions[id].Dispose();
+                    _activeSessions.Remove(id);
+                }
             }
         }
+        private readonly List<long> _toRemove = new List<long>();
 
         private void ScanNearbyShips(SEENG_modManager modManager)
         {
@@ -62,7 +61,7 @@ namespace SEENG_ES
                 var grid = entity as IMyCubeGrid;
                 if (grid == null || grid.Physics == null) continue;
 
-                if (Vector3D.DistanceSquared(grid.GetPosition(), listenerPos) > 600 * 600) //sound sync dist !!!!!!
+                if (Vector3D.DistanceSquared(grid.GetPosition(), listenerPos) > 6500 * 6500) //sound sync dist !!!!!!
                     continue;
 
                 var slimBlocks = new List<IMySlimBlock>();
@@ -78,7 +77,10 @@ namespace SEENG_ES
                         if (!_activeSessions.ContainsKey(cockpit.EntityId))
                         {
                             string prefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, modManager.CurrentPackConfig.Prefix);
-                            var session = new ShipSoundSession(cockpit, prefix);
+                            PackConfig config = modManager.AvailablePacks.ContainsKey(prefix)
+                        ? modManager.AvailablePacks[prefix]
+                        : modManager.CurrentPackConfig;
+                            var session = new ShipSoundSession(cockpit, config);
                             session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager);
                             _activeSessions.Add(cockpit.EntityId, session);
                         }
@@ -89,25 +91,42 @@ namespace SEENG_ES
 
         public void RestartSoundsWithNewPack(SEENG_modManager modManager, string newPrefix)
         {
-            var config = modManager.AvailablePacks.ContainsKey(newPrefix)
-                         ? modManager.AvailablePacks[newPrefix]
-                         : modManager.CurrentPackConfig;
-
-            SEENG_enginesParametrs.MaxEnginePitchShift = config.MaxEnginePitchShift;
-            SEENG_enginesParametrs.MaxEngine50PitchShift = config.MaxEngine50PitchShift;
-            SEENG_enginesParametrs.EngineVolumes = config.EngineVolumes;
-            SEENG_enginesParametrs.Engine50Volumes = config.Engine50Volumes;
-
-            //full reaload
-            foreach (var session in _activeSessions.Values) session.Dispose();
-            _activeSessions.Clear();
-            ScanNearbyShips(modManager);
-            _scanCounter = 60;
-
-            if (string.IsNullOrEmpty(newPrefix) || !modManager._availablePacks.ContainsKey(newPrefix))
+            if (string.IsNullOrEmpty(newPrefix) || !modManager.AvailablePacks.ContainsKey(newPrefix))
             {
                 newPrefix = "ImprovedVanilla";
             }
+            modManager.CurrentPackConfig = modManager.AvailablePacks[newPrefix];
+            MyAPIGateway.Utilities.InvokeOnGameThread(() =>
+            {
+                var validCockpits = new List<IMyCockpit>();
+                foreach (var session in _activeSessions.Values)
+                {
+                    if (session.Cockpit != null && !session.Cockpit.Closed && !session.Cockpit.MarkedForClose)
+                    {
+                        validCockpits.Add(session.Cockpit);
+                    }
+                    session.Handler.StopAll();
+                    session.Dispose();
+                }
+
+                _activeSessions.Clear();
+                _entitiesBuffer.Clear();
+
+                foreach (var cockpit in validCockpits)
+                {
+                    string shipPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, newPrefix);
+                    PackConfig shipConfig = modManager.AvailablePacks.ContainsKey(shipPrefix)
+                                            ? modManager.AvailablePacks[shipPrefix]
+                                            : modManager.AvailablePacks["ImprovedVanilla"];
+
+                    var newSession = new ShipSoundSession(cockpit, shipConfig);
+                    newSession.Handler.RestartAll(cockpit, shipPrefix, newSession.Managers.ThrustManager, newSession.Managers.SpeedManager, newSession.Managers.RotationManager);
+
+                    _activeSessions.Add(cockpit.EntityId, newSession);
+                }
+                ScanNearbyShips(modManager);
+                _scanCounter = 60;
+            });
         }
 
         public void Dispose()
