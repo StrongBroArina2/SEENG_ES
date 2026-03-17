@@ -42,10 +42,6 @@ namespace SEENG_ES
     }
     public  class SEENG_enginesParametrs
     {
-        public static float MaxEnginePitchShift { get; set; } = 15f;
-        public static float MaxEngine50PitchShift { get; set; } = 15f;
-        public static List<VolumePoint> EngineVolumes { get; set; } = new List<VolumePoint>();
-        public static List<VolumePoint> Engine50Volumes { get; set; } = new List<VolumePoint>();
 
         public static void UpdateVolumeForEmitter(MyEntity3DSoundEmitter emitter, float normalizedSpeed, List<VolumePoint> volumes)
         {
@@ -86,15 +82,14 @@ namespace SEENG_ES
             emitter.Sound.VolumeMultiplier = 1f;
         }
 
-        public static void UpdatePitchForEmitter(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
+        public static void UpdatePitchForEmitter(MyEntity3DSoundEmitter emitter, float normalizedSpeed, float maxPitchShift)
         {
             if (emitter?.Sound != null && emitter.Sound.IsPlaying)
             {
-                float semitones = MaxEnginePitchShift * normalizedSpeed;
+                float semitones = maxPitchShift * normalizedSpeed;
                 emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
             }
         }
-
         // kill this later (i killd it yay)
     }
 }

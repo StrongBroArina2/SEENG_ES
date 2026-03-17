@@ -18,12 +18,12 @@ namespace SEENG_ES
             emitter.PlaySound(soundPair);
         }
 
-        public  void UpdatePitchForLoop50(MyEntity3DSoundEmitter emitter, float normalizedSpeed)
+        public void UpdatePitchForLoop50(MyEntity3DSoundEmitter emitter, float normalizedSpeed, float maxPitch50)
         {
             if (emitter?.Sound != null && emitter.Sound.IsPlaying)
             {
                 float adjustedSpeed = normalizedSpeed - 0.5f;
-                float semitones = 15f * adjustedSpeed;
+                float semitones = maxPitch50 * adjustedSpeed;
                 emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
             }
         }
