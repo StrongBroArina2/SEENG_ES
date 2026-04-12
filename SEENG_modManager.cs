@@ -4,7 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Xml;
 using Microsoft.Win32;
+using Sandbox.Engine.Utils;
 using Sandbox.ModAPI;
+using SEENG_SElauncher.SEENG_CFG_SYS;
 using VRage.Utils;
 
 namespace SEENG_ES
@@ -16,7 +18,9 @@ namespace SEENG_ES
         public string CurrentPack { get; private set; } = "";
         public Dictionary<string, PackConfig> _workshopPacks = new Dictionary<string, PackConfig>();
         public Dictionary<string, PackConfig> _debugPacks = new Dictionary<string, PackConfig>();
+        SEENG_TransmissionConfig transmission = new SEENG_TransmissionConfig();
         private bool _showDebugPacks = false;
+
 
         public bool ShowDebugPacks
         {
@@ -147,90 +151,85 @@ namespace SEENG_ES
                     float max50PitchShift = 15f;
                     List<VolumePoint> engineVolumes = new List<VolumePoint>();
                     List<VolumePoint> engine50Volumes = new List<VolumePoint>();
-                    string currentElement = "";
+                    var transmission = new SEENG_TransmissionConfig();
 
                     while (reader.Read())
                     {
-                        if (reader.NodeType == XmlNodeType.Element)
-                        {
-                            currentElement = reader.Name;
+                        if (reader.NodeType != XmlNodeType.Element) continue;
 
-                            if (currentElement == "Prefix")
-                            {
+                        switch (reader.Name)
+                        {
+                            case "Prefix":
                                 reader.Read();
                                 prefix = reader.Value.Trim();
-                            }
-                            else if (reader.Name == "FriendlyName")
-                            {
+                                break;
+
+                            case "FriendlyName":
                                 reader.Read();
                                 friendlyName = reader.Value.Trim();
-                            }
-                            else if (currentElement == "MaxEnginePitchShift")
-                            {
+                                break;
+
+                            case "MaxEnginePitchShift":
                                 reader.Read();
-                                if (float.TryParse(reader.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
-                                {
-                                    maxPitchShift = value;
-                                }
-                            }
-                            else if (currentElement == "MaxEngine50PitchShift")
-                            {
+                                if (float.TryParse(reader.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float pitchVal))
+                                    maxPitchShift = pitchVal;
+                                break;
+
+                            case "MaxEngine50PitchShift":
                                 reader.Read();
-                                if (float.TryParse(reader.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+                                if (float.TryParse(reader.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float pitch50Val))
+                                    max50PitchShift = pitch50Val;
+                                break;
+
+                            case "SeengEngineVolume":
+                                float speed = 0f, volume = 0f;
+                                if (reader.MoveToAttribute("Speed") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out speed) &&
+                                    reader.MoveToAttribute("Volume") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out volume))
                                 {
-                                    max50PitchShift = value;
+                                    if (speed >= 0f && speed <= 100f && volume >= 0f && volume <= 1f)
+                                        engineVolumes.Add(new VolumePoint(speed, volume));
                                 }
-                            }
-                            else if (currentElement == "SeengEngineVolume")
-                            {
-                                float speed = 0f;
-                                float volume = 0f;
-                                if (reader.MoveToAttribute("Speed") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out speed))
+                                break;
+
+                            case "SeengEngine50Volume":
+                                float speed50 = 0f, volume50 = 0f;
+                                if (reader.MoveToAttribute("Speed") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out speed50) &&
+                                    reader.MoveToAttribute("Volume") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out volume50))
                                 {
+                                    if (speed50 >= 0f && speed50 <= 100f && volume50 >= 0f && volume50 <= 1f)
+                                        engine50Volumes.Add(new VolumePoint(speed50, volume50));
                                 }
-                                if (reader.MoveToAttribute("Volume") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out volume))
-                                {
-                                }
-                                if (currentElement == "SeengEngineVolume" && speed >= 0f && speed <= 100f && volume >= 0f && volume <= 1f)
-                                {
-                                    engineVolumes.Add(new VolumePoint { Speed = speed, Volume = volume });
-                                }
-                            }
-                            else if (currentElement == "SeengEngine50Volume")
-                            {
-                                float speed = 0f;
-                                float volume = 0f;
-                                if (reader.MoveToAttribute("Speed") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out speed))
-                                {
-                                }
-                                if (reader.MoveToAttribute("Volume") && float.TryParse(reader.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out volume))
-                                {
-                                }
-                                if (currentElement == "SeengEngine50Volume" && speed >= 0f && speed <= 100f && volume >= 0f && volume <= 1f)
-                                {
-                                    engine50Volumes.Add(new VolumePoint { Speed = speed, Volume = volume });
-                                }
-                            }
+                                break;
+
+
                         }
                     }
+
                     engineVolumes.Sort((a, b) => a.Speed.CompareTo(b.Speed));
                     engine50Volumes.Sort((a, b) => a.Speed.CompareTo(b.Speed));
 
                     return new PackConfig
                     {
                         Prefix = prefix,
-                        DisplayName = prefix,
                         FriendlyName = friendlyName,
                         MaxEnginePitchShift = maxPitchShift,
                         MaxEngine50PitchShift = max50PitchShift,
                         EngineVolumes = engineVolumes,
-                        Engine50Volumes = engine50Volumes
+                        Engine50Volumes = engine50Volumes,
+                        Transmission = transmission ?? SEENG_TransmissionConfig.Default
                     };
                 }
             }
             catch (Exception e)
             {
-                return new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f };
+                MyLog.Default.WriteLine($"SEENG_ES: Retartd {configPath}: {e.Message}");
+                return new PackConfig
+                {
+                    Prefix = "",
+                    MaxEnginePitchShift = 15f,
+                    MaxEngine50PitchShift = 15f,
+                    Transmission = SEENG_TransmissionConfig.Default
+                };
             }
         }
 

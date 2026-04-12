@@ -1,5 +1,7 @@
 ﻿using Sandbox.Engine.Utils;
 using Sandbox.ModAPI;
+using SEENG_SElauncher.SEENG_CFG_SYS;
+using SEENG_SElauncher.SEENG_Managers;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -81,7 +83,7 @@ namespace SEENG_ES
                         ? modManager.AvailablePacks[prefix]
                         : modManager.CurrentPackConfig;
                             var session = new ShipSoundSession(cockpit, config);
-                            session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager);
+                            session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager, session.Managers.ThrottleThrusterManager, session.TransmissionConfig);
                             _activeSessions.Add(cockpit.EntityId, session);
                         }
                     }
@@ -120,8 +122,15 @@ namespace SEENG_ES
                                             : modManager.AvailablePacks["ImprovedVanilla"];
 
                     var newSession = new ShipSoundSession(cockpit, shipConfig);
-                    newSession.Handler.RestartAll(cockpit, shipPrefix, newSession.Managers.ThrustManager, newSession.Managers.SpeedManager, newSession.Managers.RotationManager);
-
+                    newSession.Handler.RestartAll(
+                 cockpit,
+                 shipPrefix,
+                 newSession.Managers.ThrustManager,
+                 newSession.Managers.SpeedManager,
+                 newSession.Managers.RotationManager,
+                 newSession.Managers.ThrottleThrusterManager,
+                 newSession.TransmissionConfig
+             );
                     _activeSessions.Add(cockpit.EntityId, newSession);
                 }
                 ScanNearbyShips(modManager);

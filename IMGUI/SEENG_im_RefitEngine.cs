@@ -1,8 +1,10 @@
 ﻿using Sandbox.Game;
 using Sandbox.ModAPI;
+using SEENG_ES;
+using SEENG_SElauncher.SEENG_CFG_SYS;
 using VRage.Audio;
 
-namespace SEENG_ES
+namespace SEENG_SElauncher.IMGUI
 {
     public struct RefitResult
     {

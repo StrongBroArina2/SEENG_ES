@@ -3,8 +3,9 @@ using Sandbox.ModAPI;
 using VRage.Audio;
 using VRageMath;
 using System.Collections.Generic;
+using SEENG_ES;
 
-namespace SEENG_ES
+namespace SEENG_SElauncher.SEENG_CFG_SYS
 {
     public struct VolumePoint
     {
@@ -28,16 +29,18 @@ namespace SEENG_ES
         public string ModPath { get; set; } = "";
         public string DisplayName { get; set; } = "";
         public string FriendlyName { get; set; } = "";
+        public SEENG_TransmissionConfig Transmission { get; set; } = SEENG_TransmissionConfig.Default;
 
 
 
-        public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null)
+        public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null, SEENG_TransmissionConfig transmission = null)
         {
             Prefix = prefix;
             MaxEnginePitchShift = maxEnginePitchShift;
             MaxEngine50PitchShift = maxEngine50PitchShift;
             EngineVolumes = engineVolumes ?? new List<VolumePoint>();
             Engine50Volumes = engine50Volumes ?? new List<VolumePoint>();
+            Transmission = transmission ?? SEENG_TransmissionConfig.Default;
         }
     }
     public  class SEENG_enginesParametrs

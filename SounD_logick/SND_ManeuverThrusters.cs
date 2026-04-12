@@ -7,8 +7,9 @@ using VRage.Utils;
 using VRageMath;
 using System;
 using System.Collections.Generic;
-using static SEENG_ES.SpeedManager;
+using static SEENG_SElauncher.SEENG_Managers.SpeedManager;
 using VRage.ModAPI;
+using SEENG_SElauncher.SEENG_Managers;
 
 namespace SEENG_ES
 {

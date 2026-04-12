@@ -2,8 +2,9 @@
 using VRage.Utils;
 using System.Globalization;
 using VRage.Game.ModAPI.Ingame.Utilities;
+using SEENG_ES;
 
-namespace SEENG_ES
+namespace SEENG_SElauncher.SEENG_CFG_SYS
 {
     public class SEENG_aConfig
     {
@@ -49,6 +50,47 @@ namespace SEENG_ES
             return 120f;
         }
 
+        public static SEENG_TransmissionConfig GetTransmissionConfig(IMyCockpit cockpit, SEENG_TransmissionConfig packTransmission = null)
+        {
+            var config = new SEENG_TransmissionConfig();
+
+            if (cockpit != null)
+            {
+                string customData = cockpit.CustomData;
+                if (!string.IsNullOrEmpty(customData))
+                {
+                    MyIni ini = new MyIni();
+                    if (ini.TryParse(customData))
+                    {
+                        config.ParseFromCustomData(ini);
+                    }
+                }
+            }
+
+            if (packTransmission != null && config.GearRatios.Count <= 1)
+            {
+                config = packTransmission;
+            }
+
+            return config;
+        }
+        public static bool GetSkidSteering(IMyCockpit cockpit, bool packDefault = false)
+        {
+            if (cockpit != null)
+            {
+                string customData = cockpit.CustomData;
+                if (!string.IsNullOrEmpty(customData))
+                {
+                    MyIni ini = new MyIni();
+                    if (ini.TryParse(customData) && ini.ContainsKey("SEENG", "SkidSteering"))
+                    {
+                        return ini.Get("SEENG", "SkidSteering").ToBoolean(false);
+                    }
+                }
+            }
+
+            return packDefault;
+        }
         public static void UpdatePackPrefixInCustomData(IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
@@ -57,7 +99,6 @@ namespace SEENG_ES
             ini.Set("SEENG", "seeng_pack", prefix);
             cockpit.CustomData = ini.ToString();
         }
-
         public static string GetPackPrefixFromCustomData(IMyCockpit cockpit, string defaultPrefix)
         {
             if (cockpit == null) return defaultPrefix;

@@ -13,7 +13,11 @@ using VRage.Game.ModAPI;
 using System;
 using VRage.Utils;
 using VRage.Game;
-namespace SEENG_ES
+using SEENG_SElauncher.SEENG_CFG_SYS;
+using SEENG_ES;
+using VRage.Game.ModAPI.Ingame.Utilities;
+
+namespace SEENG_SElauncher.IMGUI
 {
     public class SEENGRenderComponent : IRenderComponent
     {
@@ -34,6 +38,12 @@ namespace SEENG_ES
         private bool _showVolumeWindow = false;
         private float _volumeValue = 0f;       
         private string _volumeInputText = "0";
+
+
+        private bool _showTransmissionWindow = false;
+        private SEENG_TransmissionConfig _editingTransmission = null;
+        private int _editingGearCount = 5;
+        private int _editingMode = 1;
         public SEENGRenderComponent(SEENG_modManager modManager, SLogic logic, IImGuiImageService imageService = null)
         {
             _modManager = modManager ?? throw new ArgumentNullException(nameof(modManager));
@@ -68,7 +78,7 @@ namespace SEENG_ES
             var displaySize = ImGui.GetIO().DisplaySize;
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.FirstUseEver, new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(displaySize.X * 0.75f, displaySize.Y * 0.75f), ImGuiCond.Once);
-            if (!ImGui.Begin("SEENG Engine Sounds 1.0.1", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
+            if (!ImGui.Begin("SEENG Engine Sounds 1.3.0", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
             {
                 ImGui.End();
                 return;
@@ -97,8 +107,8 @@ namespace SEENG_ES
                 var listboxCenterX = windowSize.X * 0.5f;
                 var listboxCenterY = windowSize.Y * 0.4f;
                 var captionY = listboxCenterY - windowSize.Y * 0.2407f - windowSize.Y * 0.0667f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("SEENG Engine Sounds! 1.0").X * 0.5f, captionY));
-                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "SEENG Engine Sounds! 1.0");
+                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("SEENG Engine Sounds! 1.3").X * 0.5f, captionY));
+                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "SEENG Engine Sounds! 1.3");
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("Engines list").X * 0.5f, listboxCenterY - windowSize.Y * 0.4444f));
                 ImGui.Text("Engines list:");
                 // Listbox
@@ -112,7 +122,7 @@ namespace SEENG_ES
                     {
                         for (int i = 0; i < packList.Count; i++)
                         {
-                            bool isSelected = (_selectedIndex == i);
+                            bool isSelected = _selectedIndex == i;
                             string displayText = i == 0 ? "None" : currentPacks[packList[i]].DisplayName;
                             if (ImGui.Selectable(displayText, isSelected))
                             {
@@ -176,6 +186,197 @@ namespace SEENG_ES
                     {
                     }
                 }
+
+
+                //  ==================== Transmission Settings Button
+                float transmissionOffsetY = subButtonY + subButtonHeight + 10f;
+                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX + listboxSize.X * 0.0f, transmissionOffsetY));
+                if (ImGui.Button("Transmission Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+
+                {
+                    var cockpit = MyAPIGateway.Session.Player?.Controller?.ControlledEntity as IMyCockpit;
+                    if (cockpit != null && _sessionChecker.HasSEENGTag(cockpit))
+                    {
+                        _editingTransmission = SEENG_aConfig.GetTransmissionConfig(cockpit);
+                        _editingGearCount = _editingTransmission.GearRatios.Count - 1;
+                        _showTransmissionWindow = true;
+                    }
+                    else
+                    {
+                    }
+                }
+
+                // ==================== TRANSMISSION SETTINGS WINDOW
+                if (_showTransmissionWindow && _editingTransmission != null)
+                {
+                    ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
+                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(580, 720), ImGuiCond.Once);
+
+                    bool windowOpen = true;
+                    if (ImGui.Begin("Transmission Settings", ref windowOpen, ImGuiWindowFlags.NoResize))
+                    {
+                        var cockpit = MyAPIGateway.Session.Player?.Controller?.ControlledEntity as IMyCockpit;
+                        if (_editingTransmission == null && cockpit != null)
+                        {
+                            _editingTransmission = SEENG_aConfig.GetTransmissionConfig(cockpit);
+                            _editingGearCount = Math.Max(2, _editingTransmission.GearRatios.Count - 1);
+                        }
+
+               
+                        ImGui.Text("Mode:");
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("RPM-based (Complex)", _editingMode == 0)) _editingMode = 0;
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("Speed-based (Simple)", _editingMode == 1)) _editingMode = 1;
+
+                        ImGui.Separator();
+
+
+                        ImGui.Text($"Gears: {_editingGearCount}");
+                        ImGui.SameLine();
+                        if (ImGui.Button("-") && _editingGearCount > 2)
+                        {
+                            _editingGearCount--;
+                            TrimListsToGearCount();
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("+") && _editingGearCount < 8)
+                        {
+                            _editingGearCount++;
+                            ExtendListsToGearCount();
+                        }
+
+                        ImGui.Separator();
+
+                        if (_editingMode == 0) // RPM-based
+                        {
+                            ImGui.Text("Gear Ratios (RPM mode):");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.GearRatios.Count ? _editingTransmission.GearRatios[i] : 2.5f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Gear {i}##gr", ref val, 0.1f, 0.5f, "%.2f"))
+                                {
+                                    while (_editingTransmission.GearRatios.Count <= i) _editingTransmission.GearRatios.Add(2.5f);
+                                    _editingTransmission.GearRatios[i] = (float)Math.Round(val, 2);
+                                }
+                            }
+
+                            ImGui.Separator();
+                            ImGui.Text("Upshift RPM:");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.UpshiftRPM.Count ? _editingTransmission.UpshiftRPM[i] : 4200f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Upshift {i}##urpm", ref val, 50, 100, "%.0f"))
+                                {
+                                    while (_editingTransmission.UpshiftRPM.Count <= i) _editingTransmission.UpshiftRPM.Add(4200f);
+                                    _editingTransmission.UpshiftRPM[i] = (float)Math.Round(val);
+                                }
+                            }
+
+                            ImGui.Text("Downshift RPM:");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.DownshiftRPM.Count ? _editingTransmission.DownshiftRPM[i] : 3200f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Downshift {i}##drpm", ref val, 50, 100, "%.0f"))
+                                {
+                                    while (_editingTransmission.DownshiftRPM.Count <= i) _editingTransmission.DownshiftRPM.Add(3200f);
+                                    _editingTransmission.DownshiftRPM[i] = (float)Math.Round(val);
+                                }
+                            }
+                        }
+                        else //Speed-based
+                        {
+                            ImGui.Text("Gear Ratios (Speed mode):");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.GearRatiosS.Count ? _editingTransmission.GearRatiosS[i] : 2.0f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Gear {i}##grs", ref val, 0.05f, 0.2f, "%.2f"))
+                                {
+                                    while (_editingTransmission.GearRatiosS.Count <= i) _editingTransmission.GearRatiosS.Add(2.0f);
+                                    _editingTransmission.GearRatiosS[i] = (float)Math.Round(val, 2);
+                                }
+                            }
+
+                            ImGui.Separator();
+                            ImGui.Text("Upshift Speed Thresholds:");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.UpshiftSpeedThresholds.Count ? _editingTransmission.UpshiftSpeedThresholds[i] : 0.50f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Upshift {i}##ust", ref val, 0.01f, 0.05f, "%.2f"))
+                                {
+                                    while (_editingTransmission.UpshiftSpeedThresholds.Count <= i) _editingTransmission.UpshiftSpeedThresholds.Add(0.50f);
+                                    _editingTransmission.UpshiftSpeedThresholds[i] = (float)Math.Round(val, 2);
+                                }
+                            }
+
+                            ImGui.Text("Downshift Speed Thresholds:");
+                            for (int i = 1; i <= _editingGearCount; i++)
+                            {
+                                float val = i < _editingTransmission.DownshiftSpeedThresholds.Count ? _editingTransmission.DownshiftSpeedThresholds[i] : 0.40f;
+                                ImGui.SetNextItemWidth(150);
+                                if (ImGui.InputFloat($"Downshift {i}##dst", ref val, 0.01f, 0.05f, "%.2f"))
+                                {
+                                    while (_editingTransmission.DownshiftSpeedThresholds.Count <= i) _editingTransmission.DownshiftSpeedThresholds.Add(0.40f);
+                                    _editingTransmission.DownshiftSpeedThresholds[i] = (float)Math.Round(val, 2);
+                                }
+                            }
+                        }
+
+                        ImGui.Separator();
+
+                        bool skid = _editingTransmission.SkidSteering;
+                        if (ImGui.Checkbox("Skid Steering (for tracked vehicles)", ref skid))
+                            _editingTransmission.SkidSteering = skid;
+
+                        ImGui.Separator();
+
+                        if (ImGui.Button("Save to Cockpit", new System.Numerics.Vector2(220, 45)))
+                        {
+                            if (cockpit != null)
+                            {
+                                MyIni ini = new MyIni();
+                                ini.TryParse(cockpit.CustomData);
+
+                                if (_editingMode == 0) 
+                                {
+                                    ini.Set("SEENG_CAR", "GearRatios", string.Join(",", _editingTransmission.GearRatios));
+                                    ini.Set("SEENG_CAR", "UpshiftRPM", string.Join(",", _editingTransmission.UpshiftRPM));
+                                    ini.Set("SEENG_CAR", "DownshiftRPM", string.Join(",", _editingTransmission.DownshiftRPM));
+                                }
+                                else 
+                                {
+                                    ini.Set("SEENG_CAR", "GearRatiosS", string.Join(",", _editingTransmission.GearRatiosS));
+                                    ini.Set("SEENG_CAR", "UpshiftSpeedThresholds", string.Join(",", _editingTransmission.UpshiftSpeedThresholds));
+                                    ini.Set("SEENG_CAR", "DownshiftSpeedThresholds", string.Join(",", _editingTransmission.DownshiftSpeedThresholds));
+                                }
+
+                                ini.Set("SEENG_CAR", "SkidSteering", _editingTransmission.SkidSteering.ToString());
+
+                                cockpit.CustomData = ini.ToString();
+
+                                MyAPIGateway.Utilities.ShowNotification($"Saved {_editingGearCount} gears successfully!", 6000, MyFontEnum.Green);
+                                _showTransmissionWindow = false;
+                            }
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(120, 45)))
+                            _showTransmissionWindow = false;
+                    }
+                    ImGui.End();
+
+                    if (!windowOpen)
+                        _showTransmissionWindow = false;
+                }
+
+
+
+
                 // Volume Setings
                 if (_showVolumeWindow)
                 {
@@ -220,7 +421,7 @@ namespace SEENG_ES
 
                         //btn
                         float volButtonWidth = 140f;
-                        float volSpacing = (ImGui.GetWindowWidth() - (volButtonWidth * 2)) * 0.5f;
+                        float volSpacing = (ImGui.GetWindowWidth() - volButtonWidth * 2) * 0.5f;
 
                         ImGui.SetCursorPosX(volSpacing);
                         if (ImGui.Button("Apply", new System.Numerics.Vector2(volButtonWidth, 40)))
@@ -370,7 +571,7 @@ namespace SEENG_ES
                         float buttonSizeX = ImGui.GetWindowWidth() * 0.2500f;
                         float buttonSizeY = ImGui.GetWindowHeight() * 0.2500f;
                         float buttonSpacing = ImGui.GetWindowWidth() * 0.1500f;
-                        float totalWidth = (buttonSizeX * 2) + buttonSpacing;
+                        float totalWidth = buttonSizeX * 2 + buttonSpacing;
                         float startX = (ImGui.GetWindowWidth() - totalWidth) * 0.5f;
                         ImGui.SetCursorPosY(ImGui.GetWindowHeight() * 0.75f);
                         ImGui.SetCursorPosX(startX);
@@ -442,6 +643,28 @@ namespace SEENG_ES
                 return debugConfig.ModPath;
             }
             return "";
+        }
+
+        private void TrimListsToGearCount()
+        {
+            int target = _editingGearCount + 1;
+            if (_editingTransmission.GearRatios.Count > target) _editingTransmission.GearRatios.RemoveRange(target, _editingTransmission.GearRatios.Count - target);
+            if (_editingTransmission.UpshiftRPM.Count > target) _editingTransmission.UpshiftRPM.RemoveRange(target, _editingTransmission.UpshiftRPM.Count - target);
+            if (_editingTransmission.DownshiftRPM.Count > target) _editingTransmission.DownshiftRPM.RemoveRange(target, _editingTransmission.DownshiftRPM.Count - target);
+            if (_editingTransmission.GearRatiosS.Count > target) _editingTransmission.GearRatiosS.RemoveRange(target, _editingTransmission.GearRatiosS.Count - target);
+            if (_editingTransmission.UpshiftSpeedThresholds.Count > target) _editingTransmission.UpshiftSpeedThresholds.RemoveRange(target, _editingTransmission.UpshiftSpeedThresholds.Count - target);
+            if (_editingTransmission.DownshiftSpeedThresholds.Count > target) _editingTransmission.DownshiftSpeedThresholds.RemoveRange(target, _editingTransmission.DownshiftSpeedThresholds.Count - target);
+        }
+
+        private void ExtendListsToGearCount()
+        {
+            int target = _editingGearCount + 1;
+            while (_editingTransmission.GearRatios.Count < target) _editingTransmission.GearRatios.Add(2.5f);
+            while (_editingTransmission.UpshiftRPM.Count < target) _editingTransmission.UpshiftRPM.Add(4200f);
+            while (_editingTransmission.DownshiftRPM.Count < target) _editingTransmission.DownshiftRPM.Add(3200f);
+            while (_editingTransmission.GearRatiosS.Count < target) _editingTransmission.GearRatiosS.Add(2.0f);
+            while (_editingTransmission.UpshiftSpeedThresholds.Count < target) _editingTransmission.UpshiftSpeedThresholds.Add(0.50f);
+            while (_editingTransmission.DownshiftSpeedThresholds.Count < target) _editingTransmission.DownshiftSpeedThresholds.Add(0.40f);
         }
         public void Dispose()
         {

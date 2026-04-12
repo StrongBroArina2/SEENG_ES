@@ -1,9 +1,12 @@
 using System;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using SEENG_SElauncher.SEENG_CFG_SYS;
+using SEENG_SElauncher.SEENG_Managers;
 using VRage.Utils;
 using VRageMath;
-using static SEENG_ES.SpeedManager;
+using static SEENG_SElauncher.SEENG_Managers.SpeedManager;
+
 
 namespace SEENG_ES
 {
@@ -29,13 +32,17 @@ namespace SEENG_ES
 
         private readonly SND_C_EngineHandler _cEngineHandler = new SND_C_EngineHandler();
         private readonly SND_CT_EngineHandler _ctEngineHandler = new SND_CT_EngineHandler();
+        private readonly SND_CTS_EngineHandler _ctsEngineHandler = new SND_CTS_EngineHandler();
         private readonly SND_C_TracksHandler _cTracksHandler = new SND_C_TracksHandler();
         private readonly SND_C_WheelsHandler _cWheelsHandler = new SND_C_WheelsHandler();
         
         private readonly SND_MainThrusterHandler _mainThrusterHandler = new SND_MainThrusterHandler();
         private readonly SND_ManeuverThrustersHandler _maneuverThrustersHandler = new SND_ManeuverThrustersHandler();
 
-        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, PackConfig config)
+        public SND_CT_EngineHandler GetCTEngineHandler() => _ctEngineHandler;
+        public SND_CTS_EngineHandler GetCTSEngineHandler() => _ctsEngineHandler;
+
+        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, ThrottleThrusterManager throttleManager, PackConfig config, SEENG_TransmissionConfig transmissionConfig)
         {
             if (cockpit == null) return;
             float normalizedSpeed = speedManager.NormalizedSpeed;
@@ -52,7 +59,8 @@ namespace SEENG_ES
             _mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
 
             _cEngineHandler.Update(thrustManager, speedManager);
-            _ctEngineHandler.Update(thrustManager, speedManager);
+            _ctEngineHandler.Update(thrustManager, speedManager, throttleManager);
+            _ctsEngineHandler.Update(thrustManager, speedManager, throttleManager);
             _cTracksHandler.Update(speedManager);
             _cWheelsHandler.Update(speedManager);
             
@@ -71,7 +79,7 @@ namespace SEENG_ES
             UpdateEmitter3D(_mThrustersEmitter, cockpit);
         }
 
-        public void RestartAll(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager)
+        public void RestartAll(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, ThrottleThrusterManager throttleManager, SEENG_TransmissionConfig transmissionConfig)
         {
             StopAll();
             Dispose();
@@ -82,7 +90,7 @@ namespace SEENG_ES
                 return !MySoundPair.GetCueId(fullName).IsNull;
             };
 
-            try { if (SoundExists("SeengEngineLoop")) _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error EngineLoop: " + e.Message); }
+            try { if (SoundExists("SeengEngineLoop")) _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG_ERR ENG_LOOP" + e.Message); }
             try { if (SoundExists("SeengEngineLoop50")) _engineLoop50Handler.Start(ref _engineLoop50Emitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Loop50: " + e.Message); }
             try { if (SoundExists("SeengEngineAcDc")) _acdcHandler.Start(ref _acdcEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error AcDc: " + e.Message); }
             try { if (SoundExists("SeengMoveAmbience")) _moveAmbienceHandler.Start(ref _moveAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error MoveAmbience: " + e.Message); }
@@ -93,7 +101,9 @@ namespace SEENG_ES
             try { if (SoundExists("SeengmThrusters")) _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error mThrusters: " + e.Message); }
 
             try { if (SoundExists("cSeengEngineIdle")) _cEngineHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("ctSeengEngineIdle")) _ctEngineHandler.Start(cockpit, prefix); } catch { }
+            try { if (SoundExists("ctSeengEngineIdle")) _ctEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch { }
+            try { if (SoundExists("ctsSeengEngineIdle")) _ctsEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch { }
+
             try { if (SoundExists("cSeengTrack33")) _cTracksHandler.Start(cockpit, prefix); } catch { }
             try { if (SoundExists("cSeengWheel33")) _cWheelsHandler.Start(cockpit, prefix); } catch { }
             try { if (SoundExists("SeengMainThrusterLoop")) _mainThrusterHandler.Start(cockpit, prefix); } catch { }
@@ -120,6 +130,8 @@ namespace SEENG_ES
 
             _cEngineHandler.StopAll();
             _ctEngineHandler.StopAll();
+            _ctsEngineHandler.StopAll();
+
             _cTracksHandler.StopAll();
             _cWheelsHandler.StopAll();
             _mainThrusterHandler.StopAll();

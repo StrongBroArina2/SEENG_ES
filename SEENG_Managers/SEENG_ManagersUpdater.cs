@@ -5,31 +5,35 @@ using System.Linq;
 using Sandbox;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Ingame;
+using SEENG_SElauncher.SEENG_CFG_SYS;
 using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
-using static SEENG_ES.SpeedManager;
+using static SEENG_SElauncher.SEENG_Managers.SpeedManager;
 using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
 using IMyThrust = Sandbox.ModAPI.IMyThrust;
 
-namespace SEENG_ES
+namespace SEENG_SElauncher.SEENG_Managers
 {
     public class ManagersUpdater
     {
         private readonly SpeedManager _speedManager;
         private readonly ThrustManager _thrustManager;
         private readonly RotationManager _rotationManager;
+        private readonly ThrottleThrusterManager _throttleThrusterManager;
 
         public ManagersUpdater(SpeedManager speedManager, ThrustManager thrustManager)
         {
             _speedManager = speedManager ?? throw new ArgumentNullException(nameof(speedManager));
             _thrustManager = thrustManager ?? throw new ArgumentNullException(nameof(thrustManager));
             _rotationManager = new RotationManager();
+            _throttleThrusterManager = new ThrottleThrusterManager();       
         }
 
         public void Update(IMyCockpit cockpit)
         {
             _thrustManager.Update(cockpit);
+            _throttleThrusterManager.Update(cockpit);
             _rotationManager.Update(cockpit);
             if (cockpit != null)
             {
@@ -44,10 +48,12 @@ namespace SEENG_ES
         public SpeedManager SpeedManager => _speedManager;
         public ThrustManager ThrustManager => _thrustManager;
         public RotationManager RotationManager => _rotationManager;
+        public ThrottleThrusterManager ThrottleThrusterManager => _throttleThrusterManager;
 
         public void Reset()
         {
             _thrustManager.Reset();
+            _throttleThrusterManager.Reset();
             _speedManager.SetNormalizedSpeed(0f);
         }
     }
@@ -187,7 +193,7 @@ namespace SEENG_ES
             if (cockpit?.CubeGrid?.Physics == null) return;
 
             float currentMaxFromData = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
-            this.MaxSpeed = currentMaxFromData;
+            MaxSpeed = currentMaxFromData;
 
             
 

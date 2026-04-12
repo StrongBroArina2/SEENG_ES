@@ -6,6 +6,7 @@ using VRage.Audio;
 using VRageMath;
 using System.Diagnostics;
 using VRage.ModAPI;
+using SEENG_SElauncher.SEENG_Managers;
 
 namespace SEENG_ES
 {
@@ -21,7 +22,6 @@ namespace SEENG_ES
 
         private  readonly Stopwatch _loadRampTimer = new Stopwatch();
         private  float _currentLoadRpm = 0f;
-        private  bool _isRampingUp = false;
 
         private const float RPM33 = 0.33f;
         private const float RPM66 = 0.66f;
@@ -123,7 +123,6 @@ namespace SEENG_ES
 
             _loadRampTimer.Reset();
             _currentLoadRpm = 0f;
-            _isRampingUp = false;
         }
 
         private  void CreateEmitter(ref MyEntity3DSoundEmitter emitter, MyEntity entity, string cueName, bool looped)
