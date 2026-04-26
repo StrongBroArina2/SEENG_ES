@@ -33,7 +33,7 @@ namespace SEENG_ES
             {
                 var session = kvp.Value;
 
-                if (session.Cockpit == null || session.Cockpit.Closed || !session.Cockpit.IsWorking)
+                if (session.Cockpit == null || session.Cockpit.Closed || !_sessionChecker.HasSEENGTag(session.Cockpit) )
                 {
                     _toRemove.Add(kvp.Key);
                     continue;

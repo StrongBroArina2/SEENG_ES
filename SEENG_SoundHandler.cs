@@ -46,29 +46,29 @@ namespace SEENG_ES
         {
             if (cockpit == null) return;
             float normalizedSpeed = speedManager.NormalizedSpeed;
-
+            //1.0
             SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed, config.MaxEnginePitchShift);
             SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoopEmitter, normalizedSpeed, config.EngineVolumes);
-
             _engineLoop50Handler.UpdatePitchForLoop50(_engineLoop50Emitter, normalizedSpeed, config.MaxEngine50PitchShift);
             SEENG_enginesParametrs.UpdateVolumeForEmitter(_engineLoop50Emitter, normalizedSpeed, config.Engine50Volumes);
-
             _acdcHandler.UpdateAcdcVolume(_acdcEmitter, speedManager);
             _moveAmbienceHandler.UpdateMoveAmbienceVolume(_moveAmbienceEmitter, normalizedSpeed);
             _stationaryAmbienceHandler.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
-            _mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
 
+            //1.2
+            _mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
+            _mainThrusterHandler.Update(cockpit, thrustManager);
+            _maneuverThrustersHandler.Update(cockpit, rotationManager, speedManager);
+            _acdcAdvHandler.Update(cockpit, speedManager);
+            _speedUpDown.Update(cockpit, speedManager);
+
+            //1.3
             _cEngineHandler.Update(thrustManager, speedManager);
             _ctEngineHandler.Update(thrustManager, speedManager, throttleManager);
             _ctsEngineHandler.Update(thrustManager, speedManager, throttleManager);
             _cTracksHandler.Update(speedManager);
             _cWheelsHandler.Update(speedManager);
             
-            _mainThrusterHandler.Update(cockpit, thrustManager);
-            _maneuverThrustersHandler.Update(cockpit, rotationManager, speedManager);
-
-            _acdcAdvHandler.Update(cockpit, speedManager);
-            _speedUpDown.Update(cockpit, speedManager);
 
             UpdateEmitter3D(_engineLoopEmitter, cockpit);
             UpdateEmitter3D(_acdcEmitter, cockpit);
@@ -89,27 +89,26 @@ namespace SEENG_ES
                 string fullName = string.IsNullOrEmpty(prefix) ? baseName : $"{baseName}_{prefix}";
                 return !MySoundPair.GetCueId(fullName).IsNull;
             };
-
+            // 1.0
             try { if (SoundExists("SeengEngineLoop")) _engineLoopHandler.Start(ref _engineLoopEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG_ERR ENG_LOOP" + e.Message); }
             try { if (SoundExists("SeengEngineLoop50")) _engineLoop50Handler.Start(ref _engineLoop50Emitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Loop50: " + e.Message); }
             try { if (SoundExists("SeengEngineAcDc")) _acdcHandler.Start(ref _acdcEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error AcDc: " + e.Message); }
             try { if (SoundExists("SeengMoveAmbience")) _moveAmbienceHandler.Start(ref _moveAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error MoveAmbience: " + e.Message); }
-
             try { if (SoundExists("SeengStationaryAmbience")) _stationaryAmbienceHandler.Start(ref _stationaryAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error StationaryAmbience: " + e.Message); }
-
             try { if (SoundExists("SeengAmbienceConstant")) _constantAmbienceHandler.Start(ref _constantAmbienceEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Constant: " + e.Message); }
-            try { if (SoundExists("SeengmThrusters")) _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error mThrusters: " + e.Message); }
+            //1.1
+            try { if (SoundExists("SeengmThrusters")) _mThrustersHandler.Start(ref _mThrustersEmitter, cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error mThrustersGYRO: " + e.Message); }
+            try { if (SoundExists("SeengMainThrusterLoop")) _mainThrusterHandler.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error MainThrust: " + e.Message); }
+            try { if (SoundExists("SeengACDCacc")) _acdcAdvHandler.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error ACDC_ADV: " + e.Message); }
+            try { if (SoundExists("SeengSpeedUP")) _speedUpDown.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error SpeedUPDOWN: " + e.Message); }
+            try { if (SoundExists("SeengManeuverThrusters")) _maneuverThrustersHandler.Restart(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error ManeuvrThrust: " + e.Message); }
+            //1.3
+            try { if (SoundExists("cSeengEngineIdle")) _cEngineHandler.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error cEngine: " + e.Message); }
+            try { if (SoundExists("ctSeengEngineIdle")) _ctEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error ctEngine: " + e.Message); }
+            try { if (SoundExists("ctsSeengEngineIdle")) _ctsEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error ctsEngine: " + e.Message); }
+            try { if (SoundExists("cSeengTrack33")) _cTracksHandler.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Track: " + e.Message); }
+            try { if (SoundExists("cSeengWheel33")) _cWheelsHandler.Start(cockpit, prefix); } catch (Exception e) { MyLog.Default.WriteLine("SEENG Error Wheel: " + e.Message); }
 
-            try { if (SoundExists("cSeengEngineIdle")) _cEngineHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("ctSeengEngineIdle")) _ctEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch { }
-            try { if (SoundExists("ctsSeengEngineIdle")) _ctsEngineHandler.Start(cockpit, prefix, transmissionConfig); } catch { }
-
-            try { if (SoundExists("cSeengTrack33")) _cTracksHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("cSeengWheel33")) _cWheelsHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("SeengMainThrusterLoop")) _mainThrusterHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("SeengACDCacc")) _acdcAdvHandler.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("SeengSpeedUP")) _speedUpDown.Start(cockpit, prefix); } catch { }
-            try { if (SoundExists("SeengManeuverThrusters")) _maneuverThrustersHandler.Restart(cockpit, prefix); } catch { }
         }
 
         private void UpdateEmitter3D(MyEntity3DSoundEmitter emitter, IMyCockpit cockpit)
@@ -119,25 +118,25 @@ namespace SEENG_ES
         }
 
         public void StopAll()
-        {
+        {    //1.0
             _engineLoopEmitter?.StopSound(true);
             _acdcEmitter?.StopSound(true);
             _engineLoop50Emitter?.StopSound(true);
             _moveAmbienceEmitter?.StopSound(true);
             _stationaryAmbienceEmitter?.StopSound(true);
             _constantAmbienceEmitter?.StopSound(true);
+            //1.1
             _mThrustersEmitter?.StopSound(true);
-
-            _cEngineHandler.StopAll();
-            _ctEngineHandler.StopAll();
-            _ctsEngineHandler.StopAll();
-
-            _cTracksHandler.StopAll();
-            _cWheelsHandler.StopAll();
             _mainThrusterHandler.StopAll();
             _maneuverThrustersHandler.StopAll();
             _acdcAdvHandler.StopAll();
             _speedUpDown.StopAll();
+            //1.3
+            _cEngineHandler.StopAll();
+            _ctEngineHandler.StopAll();
+            _ctsEngineHandler.StopAll();
+            _cTracksHandler.StopAll();
+            _cWheelsHandler.StopAll();
         }
 
         public void Dispose()

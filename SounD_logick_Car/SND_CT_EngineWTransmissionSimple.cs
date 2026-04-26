@@ -26,6 +26,8 @@ namespace SEENG_ES
         private bool _isTrackedVehicle = false;
         private readonly Stopwatch _revCooldown = new Stopwatch();
         private const float REV_COOLDOWN_TIME = 6.0f;
+        private readonly Stopwatch _relCooldown = new Stopwatch();
+        private const float REL_COOLDOWN_TIME = 6.0f;
 
         private int _currentGear = 1;
         private float _virtualRpm = 800f;
@@ -51,8 +53,8 @@ namespace SEENG_ES
             if (cockpit == null) return;
 
             _prefix = prefix;
-            _config = transmissionConfig ?? SEENG_TransmissionConfig.Default; 
-
+            _config = transmissionConfig ?? SEENG_TransmissionConfig.Default;
+            _isTrackedVehicle = _config.SkidSteering;
             var entity = (MyEntity)(IMyEntity)cockpit;
 
             CreateEmitter(ref _idleT, entity, GetFullCue("ctsSeengEngineIdle"), true);
@@ -188,7 +190,15 @@ namespace SEENG_ES
                     _revCooldown.Restart();
                 }
             }
-            if (!currentActive && _wasThrottleActive) PlayOneShot(_releaseEmitter, "ctsSeengEngineRelease");
+
+            if (!currentActive && _wasThrottleActive)
+            {
+                if (!_relCooldown.IsRunning || _relCooldown.Elapsed.TotalSeconds >= REL_COOLDOWN_TIME)
+                {
+                    PlayOneShot(_releaseEmitter, "ctSeengEngineRelease");
+                    _relCooldown.Restart();
+                }
+            }
             _wasThrottleActive = currentActive;
         }
 

@@ -36,15 +36,9 @@ namespace SEENG_SElauncher.SEENG_Managers
             IsForwardThrottling = move.Z > 0.12f;   // W
             IsReverseThrottling = move.Z < -0.12f;  // S
 
-            // Skid Steering
-            if (_isTrackedVehicle)
-            {
-                IsSkidSteering = Math.Abs(move.X) > 0.35f && Math.Abs(move.Z) < 0.25f;
-            }
-            else
-            {
-                IsSkidSteering = false;
-            }
+     
+                IsSkidSteering = Math.Abs(move.X) > 0.12f;
+     
         }
 
         public void Reset()

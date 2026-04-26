@@ -225,9 +225,9 @@ namespace SEENG_SElauncher.IMGUI
                
                         ImGui.Text("Mode:");
                         ImGui.SameLine();
-                        if (ImGui.RadioButton("RPM-based (Complex)", _editingMode == 0)) _editingMode = 0;
+                        if (ImGui.RadioButton("RPM-based", _editingMode == 0)) _editingMode = 0;
                         ImGui.SameLine();
-                        if (ImGui.RadioButton("Speed-based (Simple)", _editingMode == 1)) _editingMode = 1;
+                        if (ImGui.RadioButton("Speed-based", _editingMode == 1)) _editingMode = 1;
 
                         ImGui.Separator();
 
@@ -384,7 +384,7 @@ namespace SEENG_SElauncher.IMGUI
                     ImGui.SetNextWindowSize(new System.Numerics.Vector2(460, 280), ImGuiCond.Once);
 
                     bool volumeWindowOpen = true;
-                    if (ImGui.Begin("SEENG SFX Volume", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+                    if (ImGui.Begin("SEENG SFX Volume WIP", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
                     {
                         ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.9f, 0.9f, 0.9f, 1f));
                         ImGui.SetCursorPosX((ImGui.GetWindowWidth() - ImGui.CalcTextSize("Engine Sound Volume").X) * 0.5f);

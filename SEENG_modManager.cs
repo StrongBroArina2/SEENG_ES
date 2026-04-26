@@ -95,7 +95,8 @@ namespace SEENG_ES
                 {
                     var config = ParseConfig(configPath);
                     config.ModPath = modDir;
-                    config.DisplayName = "[DEBUG] " + config.Prefix;
+                    string nameToUse = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
+                    config.DisplayName = "[DEBUG] " + nameToUse;
                     if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
                     {
                         _debugPacks[config.Prefix] = config;
@@ -119,7 +120,7 @@ namespace SEENG_ES
                 {
                     var config = ParseConfig(configPath);
                     config.ModPath = idDir;
-                    config.DisplayName = config.Prefix;
+                    config.DisplayName = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
                     if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
                     {
                         _workshopPacks[config.Prefix] = config;
