@@ -17,12 +17,10 @@ namespace SEENG_ES
 
         private float _lastSpeed = 0f;
         private float _cooldownTimer = 0f;
-        private float _soundDurationTimer = 0f;
-        private float _currentSoundLength = 0f;
         private bool _isReady = true;
         private bool _isSoundPlaying = false;
 
-        private const float COOLDOWN_TARGET = 3.0f;
+        private const float COOLDOWN_TARGET = 2.0f;
         private const float STABILITY_THRESHOLD = 1.0f;
         private const float TRIGGER_THRESHOLD = 1.2f;
 
@@ -46,14 +44,9 @@ namespace SEENG_ES
             float currentSpeed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
             float deltaSpeed = currentSpeed - _lastSpeed;
 
-            if (_isSoundPlaying)
+            if (_isSoundPlaying && _emitter != null && !_emitter.IsPlaying)
             {
-                _soundDurationTimer += 1f / 60f;
-                if (_soundDurationTimer >= _currentSoundLength)
-                {
-                    _emitter.StopSound(true);
-                    _isSoundPlaying = false;
-                }
+                _isSoundPlaying = false;
             }
 
             bool isStable = Math.Abs(deltaSpeed) < (STABILITY_THRESHOLD / 60f);
@@ -68,34 +61,23 @@ namespace SEENG_ES
             if (_isReady && !_isSoundPlaying)
             {
                 if (deltaSpeed > (TRIGGER_THRESHOLD / 60f))
-                    PlayPseudoOneShot("SeengSpeedUP");
+                    PlaySpeed("SeengSpeedUP");
                 else if (deltaSpeed < -(TRIGGER_THRESHOLD / 60f))
-                    PlayPseudoOneShot("SeengSpeedDown");
+                    PlaySpeed("SeengSpeedDown");
             }
 
             _lastSpeed = currentSpeed;
             _emitter.Update();
         }
 
-        private void PlayPseudoOneShot(string baseCue)
+        private void PlaySpeed(string baseCue)
         {
             string fullCue = string.IsNullOrEmpty(_prefix) ? baseCue : $"{baseCue}_{_prefix}";
             var pair = new MySoundPair(fullCue);
-            var soundDefinition = MyDefinitionManager.Static.GetSoundDefinition(pair.SoundId.Hash);
-
-            if (soundDefinition != null)
-            {
-                _currentSoundLength = 2.5f;
-            }
-            else
-            {
-                _currentSoundLength = 1.0f;
-            }
 
             _emitter.PlaySound(pair, stopPrevious: true);
 
             _isSoundPlaying = true;
-            _soundDurationTimer = 0f;
             _isReady = false;
             _cooldownTimer = 0f;
         }

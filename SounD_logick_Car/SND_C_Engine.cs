@@ -61,7 +61,7 @@ namespace SEENG_ES
 
             float loadMix = _currentLoadRpm / 100f;
 
-            // Idle
+            // Idle1
             float idleVol = speed <= 0.1f ? (1f - speed / 0.1f) : 0f;
             SetVolume(_idle, idleVol);
 
