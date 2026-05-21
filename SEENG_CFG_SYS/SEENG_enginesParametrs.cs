@@ -31,6 +31,8 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
         public string FriendlyName { get; set; } = "";
         public SEENG_TransmissionConfig Transmission { get; set; } = SEENG_TransmissionConfig.Default;
 
+        public bool IsActive { get; set; } // workshop mods
+
 
 
         public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null, SEENG_TransmissionConfig transmission = null)

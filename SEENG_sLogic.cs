@@ -1,5 +1,6 @@
 ﻿using Sandbox.Engine.Utils;
 using Sandbox.ModAPI;
+using SEENG_SElauncher;
 using SEENG_SElauncher.SEENG_CFG_SYS;
 using SEENG_SElauncher.SEENG_Managers;
 using VRage.Game.ModAPI;
@@ -117,10 +118,22 @@ namespace SEENG_ES
                 foreach (var cockpit in validCockpits)
                 {
                     string shipPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, newPrefix);
-                    PackConfig shipConfig = modManager.AvailablePacks.ContainsKey(shipPrefix)
-                                            ? modManager.AvailablePacks[shipPrefix]
-                                            : modManager.AvailablePacks["ImprovedVanilla"];
-
+                    if (!modManager.AvailablePacks.TryGetValue(shipPrefix, out PackConfig shipConfig))
+                    {
+                        if (!modManager.AvailablePacks.TryGetValue("ImprovedVanilla", out shipConfig))
+                        {
+                            if (modManager.AvailablePacks.Count > 0)
+                            {
+                                var firstKey = new List<string>(modManager.AvailablePacks.Keys)[0];
+                                shipConfig = modManager.AvailablePacks[firstKey];
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+                    }
+                    
                     var newSession = new ShipSoundSession(cockpit, shipConfig);
                     newSession.Handler.RestartAll(
                  cockpit,

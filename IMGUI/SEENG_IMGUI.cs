@@ -16,6 +16,7 @@ using VRage.Game;
 using SEENG_SElauncher.SEENG_CFG_SYS;
 using SEENG_ES;
 using VRage.Game.ModAPI.Ingame.Utilities;
+using Havok;
 
 namespace SEENG_SElauncher.IMGUI
 {
@@ -39,6 +40,7 @@ namespace SEENG_SElauncher.IMGUI
         private float _volumeValue = 0f;       
         private string _volumeInputText = "0";
 
+        private SEENG_News _newsService;
 
         private bool _showTransmissionWindow = false;
         private SEENG_TransmissionConfig _editingTransmission = null;
@@ -49,6 +51,7 @@ namespace SEENG_SElauncher.IMGUI
             _modManager = modManager ?? throw new ArgumentNullException(nameof(modManager));
             _logic = logic ?? throw new ArgumentNullException(nameof(logic));
             _imageService = imageService ?? MySandboxGame.Services.GetRequiredService<IImGuiImageService>();
+            _newsService = new SEENG_News(_modManager);
         }
         public void OnFrame()
         {
@@ -58,9 +61,11 @@ namespace SEENG_SElauncher.IMGUI
                 _showMenu = !_showMenu;
                 if (_showMenu)
                 {
+                    _modManager.ScanMods();
+
                     _selectedIndex = 0;
-                    UpdateDescription(0);
                     _selectedPack = "";
+                    UpdateDescription(-1);
                 }
             }
             var io = ImGui.GetIO();
@@ -78,7 +83,7 @@ namespace SEENG_SElauncher.IMGUI
             var displaySize = ImGui.GetIO().DisplaySize;
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.FirstUseEver, new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(displaySize.X * 0.75f, displaySize.Y * 0.75f), ImGuiCond.Once);
-            if (!ImGui.Begin("SEENG Engine Sounds 1.3.0", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
+            if (!ImGui.Begin("SEENG Engine Sounds 1.3.3", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
             {
                 ImGui.End();
                 return;
@@ -107,8 +112,8 @@ namespace SEENG_SElauncher.IMGUI
                 var listboxCenterX = windowSize.X * 0.5f;
                 var listboxCenterY = windowSize.Y * 0.4f;
                 var captionY = listboxCenterY - windowSize.Y * 0.2407f - windowSize.Y * 0.0667f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("SEENG Engine Sounds! 1.3").X * 0.5f, captionY));
-                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "SEENG Engine Sounds! 1.3");
+                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("SEENG Engine Sounds!").X * 0.5f, captionY));
+                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "SEENG Engine Sounds!");
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - ImGui.CalcTextSize("Engines list").X * 0.5f, listboxCenterY - windowSize.Y * 0.4444f));
                 ImGui.Text("Engines list:");
                 // Listbox
@@ -116,19 +121,42 @@ namespace SEENG_SElauncher.IMGUI
                 var packList = currentPacks.Keys.ToList();
                 var listboxSize = new System.Numerics.Vector2(windowSize.X * 0.2500f, windowSize.Y * 0.4444f);
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, listboxCenterY - listboxSize.Y * 0.5f));
+
                 if (ImGui.BeginListBox("##Packs", listboxSize))
                 {
                     try
                     {
+                        if (ImGui.Selectable("None", _selectedIndex == 0))
+                        {
+                            _selectedIndex = 0;
+                            _selectedPack = "";
+                            UpdateDescription(-1);
+                        }
+
                         for (int i = 0; i < packList.Count; i++)
                         {
-                            bool isSelected = _selectedIndex == i;
-                            string displayText = i == 0 ? "None" : currentPacks[packList[i]].DisplayName;
+                            int uiIndex = i + 1;
+                            bool isSelected = _selectedIndex == uiIndex;
+
+                            var packConfig = currentPacks[packList[i]];
+                            string displayText = packConfig.DisplayName;
+                            bool isActive = packConfig.IsActive;
+
+                            if (!isActive)
+                            {
+                                displayText += " ***";
+                                ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(1f, 0.6f, 0.9f, 1.0f));
+                            }
+
                             if (ImGui.Selectable(displayText, isSelected))
                             {
-                                _selectedIndex = i;
-                                _selectedPack = i == 0 ? "" : packList[i];
+                                _selectedIndex = uiIndex;
+                                _selectedPack = packList[i];
                                 UpdateDescription(i);
+                            }
+                            if (!isActive)
+                            {
+                                ImGui.PopStyleColor();
                             }
                         }
                     }
@@ -137,21 +165,19 @@ namespace SEENG_SElauncher.IMGUI
                         ImGui.EndListBox();
                     }
                 }
-                // Apply
+
+
+                // Apply Button
                 var buttonPosY = listboxCenterY + listboxSize.Y * 0.5f + windowSize.Y * 0.0185f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - windowSize.X * 0.1250f, buttonPosY));
                 if (ImGui.Button("Refit Engine", new System.Numerics.Vector2(windowSize.X * 0.2500f, windowSize.Y * 0.0778f)))
                 {
-                    string selectedPack = _selectedIndex > 0 ? packList[_selectedIndex] : "";
+                    string selectedPack = _selectedPack;
                     var refitEngine = new SEENG_im_RefitEngine(_modManager, _logic);
                     var result = refitEngine.HandleRefitClick(selectedPack);
                     if (result.Success)
                     {
-                        ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"Engine '{selectedPack}' instaled");
-                    }
-                    else
-                    {
-                        ImGui.TextColored(new System.Numerics.Vector4(1, 0, 0, 1), result.Message ?? "o do u like kissen bois");
+                        ImGui.TextColored(new System.Numerics.Vector4(0, 1, 0, 1), $"'{selectedPack}'");
                     }
                 }
                 // Buttons Config
@@ -159,7 +185,7 @@ namespace SEENG_SElauncher.IMGUI
                 var subButtonWidth = windowSize.X * 0.1215f;
                 var subButtonHeight = windowSize.Y * 0.0778f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, subButtonY));
-                if (ImGui.Button("Volume Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+                if (ImGui.Button("Volume Settings WIP", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
                     _showVolumeWindow = true;
                     _volumeValue = SEENG_VolumeManager.GetCurrentPercent();
@@ -384,11 +410,11 @@ namespace SEENG_SElauncher.IMGUI
                     ImGui.SetNextWindowSize(new System.Numerics.Vector2(460, 280), ImGuiCond.Once);
 
                     bool volumeWindowOpen = true;
-                    if (ImGui.Begin("SEENG SFX Volume WIP", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+                    if (ImGui.Begin("Engine Sound Volume WIP", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
                     {
                         ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.9f, 0.9f, 0.9f, 1f));
                         ImGui.SetCursorPosX((ImGui.GetWindowWidth() - ImGui.CalcTextSize("Engine Sound Volume").X) * 0.5f);
-                        ImGui.Text("Engine Sound Volume");
+                        ImGui.Text("Engine Sound Volume WIP");
                         ImGui.PopStyleColor();
                         ImGui.PopFont();
 
@@ -459,44 +485,43 @@ namespace SEENG_SElauncher.IMGUI
                 var panelSize = new System.Numerics.Vector2(windowSize.X * 0.3125f, windowSize.Y * 0.3123f);
                 drawList.AddRectFilled(panelPos, new System.Numerics.Vector2(panelPos.X + panelSize.X, panelPos.Y + panelSize.Y), 0x80000000, 0, 0);
                 ImGui.Dummy(panelSize);
-                if (_selectedIndex > 0)
+
+                if (_selectedIndex > 0 && !string.IsNullOrEmpty(_selectedPack))
                 {
-                    string selectedPack = packList[_selectedIndex];
-                    string modPath = GetModPathForPack(selectedPack);
-                    string thumbPathJpg = Path.Combine(modPath, "SEENG_thumb.jpg");
-                    string thumbPathPng = Path.Combine(modPath, "SEENG_thumb.png");
-                    string thumbPath = File.Exists(thumbPathJpg) ? thumbPathJpg : File.Exists(thumbPathPng) ? thumbPathPng : "";
-                    if (!string.IsNullOrEmpty(thumbPath) && _imageService != null)
+                    string modPath = "";
+                    if (_modManager.AvailablePacks.TryGetValue(_selectedPack, out var packConfig))
                     {
-                        try
+                        modPath = packConfig.ModPath;
+                    }
+
+                    if (!string.IsNullOrEmpty(modPath) && Directory.Exists(modPath))
+                    {
+                        string thumbPathJpg = Path.Combine(modPath, "SEENG_thumb.jpg");
+                        string thumbPathPng = Path.Combine(modPath, "SEENG_thumb.png");
+                        string thumbPath = File.Exists(thumbPathJpg) ? thumbPathJpg : File.Exists(thumbPathPng) ? thumbPathPng : "";
+
+                        if (!string.IsNullOrEmpty(thumbPath) && _imageService != null)
                         {
-                            var img = _imageService.GetFromPath(thumbPath);
-                            var size = img.Size;
-                            if (size.X > panelSize.X || size.Y > panelSize.Y)
+                            try
                             {
-                                var scale = Math.Min(panelSize.X / size.X, panelSize.Y / size.Y);
-                                size = new System.Numerics.Vector2(size.X * scale, size.Y * scale);
+                                var img = _imageService.GetFromPath(thumbPath);
+                                var size = img.Size;
+                                if (size.X > panelSize.X || size.Y > panelSize.Y)
+                                {
+                                    var scale = Math.Min(panelSize.X / size.X, panelSize.Y / size.Y);
+                                    size = new System.Numerics.Vector2(size.X * scale, size.Y * scale);
+                                }
+                                ImGui.SetCursorPos(new System.Numerics.Vector2(
+                                    panelLeftX + (panelSize.X - size.X) * 0.5f,
+                                    panelLeftY + (panelSize.Y - size.Y) * 0.5f));
+                                ImGui.Image(img, size);
                             }
-                            ImGui.SetCursorPos(new System.Numerics.Vector2(
-                            panelLeftX + (panelSize.X - size.X) * 0.5f,
-                            panelLeftY + (panelSize.Y - size.Y) * 0.5f));
-                            ImGui.Image(img, size);
-                        }
-                        catch (Exception ex)
-                        {
-                            MyLog.Default.WriteLine($"SEENG_ES: Failed to load image {thumbPath}: {ex.Message}");
+                            catch (Exception ex)
+                            {
+                                MyLog.Default.WriteLine($"SEENG_ES: Failed to load image {thumbPath}: {ex.Message}");
+                            }
                         }
                     }
-                    else
-                    {
-                    }
-                }
-                else
-                {
-                    ImGui.SetCursorPos(new System.Numerics.Vector2(
-                    panelLeftX + (panelSize.X - ImGui.CalcTextSize("Related Ships Picture").X) * 0.5f,
-                    panelLeftY + (panelSize.Y - ImGui.CalcTextSize("Related Ships Picture").Y) * 0.5f));
-                    ImGui.TextColored(new System.Numerics.Vector4(0.5f, 0.5f, 0.5f, 1), "Related Ships Picture");
                 }
                 // Detailed info text
                 var leftBottomY = panelLeftY + panelSize.Y + windowSize.Y * 0.0278f;
@@ -508,53 +533,97 @@ namespace SEENG_SElauncher.IMGUI
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("How-To").X * 0.5f, rightTopY));
                 ImGui.TextColored(new System.Numerics.Vector4(1, 1, 1, 1), "How-To");
                 var rightSubY = rightTopY + windowSize.Y * 0.0185f;
-                ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press CTRL + F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship'").X * 0.5f, rightSubY));
-                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), "1. double click 'client mod loader' in 'instaled plugins'\n2. Add desired seeng sound addons\n3. Add [SEENG] tag to a cockpit\n4. Press CTRL + F1, select and engine and press 'Refit Engine'\nOptionaly 'Set ship speed' to match it with your ship");
+                ImGui.SetCursorPos(new System.Numerics.Vector2(rightTopX - ImGui.CalcTextSize("" +
+                    "1. Subscribe and enable seeng addons in your world'\n" +
+                    "2. Add [SEENG] tag to a cockpit\n" +
+                    "3. Press CTRL + F1, select and engine and press 'Refit Engine'\n" +
+                    "Optionaly 'Set ship speed' to match it with your ship'\n\n" +
+                    "If you want to enable SEENG on any server\n" +
+                    "1. double click 'client mod loader' in 'instaled plugins\n" +
+                    "2. Enable desired seeng sound addons from here\n\n" +
+                    "*** mean that this addon loaded clientside\n players would need that addon clientloaded too to hear it").X * 0.5f, rightSubY));
+                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), 
+                    "1. Subscribe and enable seeng addons in your world'\n" +
+                    "2. Add [SEENG] tag to a cockpit\n" +
+                    "3. Press CTRL + F1, select and engine and press 'Refit Engine'\n" +
+                    "Optionaly 'Set ship speed' to match it with your ship'\n\n" +
+                    "If you want to enable SEENG on any server\n" +
+                    "1. double click 'client mod loader' in 'instaled plugins\n" +
+                    "2. Enable desired seeng sound addons from here\n\n" +
+                    "*** mean that this addon loaded clientside\n players would need that addon clientloaded too to hear it");
                 // News box
                 var newsBoxX = windowSize.X * 0.64f;
                 var newsBoxY = windowSize.Y * 0.35f;
+                var newsBoxSize = new System.Numerics.Vector2(windowSize.X * 0.3123f, windowSize.Y * 0.3123f);
+
                 ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX, newsBoxY));
-                var newsDrawList = ImGui.GetWindowDrawList();
-                var newsPanelPos = ImGui.GetCursorScreenPos();
-                var newsPanelSize = new System.Numerics.Vector2(windowSize.X * 0.3125f, windowSize.Y * 0.3123f);
-                newsDrawList.AddRectFilled(newsPanelPos, new System.Numerics.Vector2(newsPanelPos.X + newsPanelSize.X, newsPanelPos.Y + newsPanelSize.Y), 0x66000000, 0, 0);
-                ImGui.Dummy(newsPanelSize);
-                ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX + (newsPanelSize.X - ImGui.CalcTextSize("News").X) * 0.5f, newsBoxY + (newsPanelSize.Y - ImGui.CalcTextSize("News").Y) * 0.5f));
-                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), "News");
+                var newsPos = ImGui.GetCursorScreenPos();
+                ImGui.GetWindowDrawList().AddRectFilled(newsPos, new System.Numerics.Vector2(newsPos.X + newsBoxSize.X, newsPos.Y + newsBoxSize.Y), 0x80000000);
+                ImGui.Dummy(newsBoxSize);
+
+                string imgPath = _newsService.GetCurrentImagePath();
+
+                if (!string.IsNullOrEmpty(imgPath) && _imageService != null)
+                {
+                    try
+                    {
+                        var img = _imageService.GetFromPath(imgPath);
+                        var imgSize = img.Size;
+
+                        var scale = Math.Min(newsBoxSize.X / imgSize.X, newsBoxSize.Y / imgSize.Y);
+                        var finalSize = new System.Numerics.Vector2(imgSize.X * scale, imgSize.Y * scale);
+
+                        ImGui.SetCursorPos(new System.Numerics.Vector2(
+                            newsBoxX + (newsBoxSize.X - finalSize.X) * 0.5f,
+                            newsBoxY + (newsBoxSize.Y - finalSize.Y) * 0.5f));
+
+                        ImGui.Image(img, finalSize);
+                    }
+                    catch (Exception ex)
+                    {
+                        ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX + 10, newsBoxY + 10));
+                        ImGui.TextWrapped("Error loading news image");
+                    }
+                }
+                else
+                {
+                    ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX + 20, newsBoxY + 20));
+                    ImGui.Text("No news images loser");
+                }
                 // Right window btns
                 var rightButtonY = windowSize.Y * 0.675f;
                 var rightButtonX = windowSize.X * 0.672f;
                 var buttonWidth = windowSize.X * 0.2500f;
                 var buttonHeight = windowSize.Y * 0.0556f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
-                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
+               // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
+               // ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
+               // ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
                 if (ImGui.Button("Order BigMac(requaiers connection to MacApp)", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
-                    MyGuiSandbox.OpenUrlWithFallback("https://youtu.be/dQw4w9WgXcQ", "kks");
+                    MyGuiSandbox.OpenUrlWithFallback("https://www.youtube.com/shorts/_6HzLIJPH2A", "kks");
                 }
-                ImGui.PopStyleColor(3);
+                //ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + windowSize.Y * 0.0185f;
-                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
-                ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
-                if (ImGui.Button("Report a problem/suggestion", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
+              // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
+                //ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
+                //ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
+               ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
+                if (ImGui.Button("Report a problem/suggestion [DISCORD]", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
                     MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
-                ImGui.PopStyleColor(3);
+               // ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + windowSize.Y * 0.0185f;
-                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
-                ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
+                //ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
+                //ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
+                //ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
-                if (ImGui.Button("WIKI - How to make your own engine", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
+                if (ImGui.Button("'HowTo' create your own seeng mod [DISCORD]", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
                     MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
-                ImGui.PopStyleColor(3);
+               // ImGui.PopStyleColor(3);
                 // Set Ship Speed
                 if (_showSpeedWindow)
                 {

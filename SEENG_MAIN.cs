@@ -7,7 +7,6 @@ using Sandbox.ModAPI;
 using SEENG_SElauncher.IMGUI;
 using VRage.Game.Components;
 using VRage.Plugins;
-using VRage.Utils;
 
 namespace SEENG_ES
 {

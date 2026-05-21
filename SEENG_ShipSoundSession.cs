@@ -1,11 +1,12 @@
 ﻿using Sandbox;
 using Sandbox.ModAPI;
+using SEENG_ES;
 using SEENG_SElauncher.SEENG_CFG_SYS;
 using SEENG_SElauncher.SEENG_Managers;
 using VRage.Utils;
 using VRageMath;
 
-namespace SEENG_ES
+namespace SEENG_SElauncher
 {
     public class ShipSoundSession
     {

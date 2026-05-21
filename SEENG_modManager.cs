@@ -85,22 +85,48 @@ namespace SEENG_ES
             if (!Directory.Exists(modsPath)) return;
 
             _availablePacks.Clear();
+            _debugPacks.Clear();
+            _workshopPacks.Clear();
 
+            HashSet<ulong> activeWorkshopIds = new HashSet<ulong>();
+            HashSet<string> activeLocalModNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            bool isSessionLoaded = MyAPIGateway.Session?.Mods != null;
+            if (isSessionLoaded)
+            {
+                foreach (var modItem in MyAPIGateway.Session.Mods)
+                {
+                    if (modItem.PublishedFileId != 0)
+                    {
+                        activeWorkshopIds.Add(modItem.PublishedFileId);
+                    }
+                    else if (!string.IsNullOrEmpty(modItem.Name))
+                    {
+                        activeLocalModNames.Add(modItem.Name);
+                    }
+                }
+            }
 
             // Local
             foreach (string modDir in Directory.GetDirectories(modsPath))
             {
+                string folderName = Path.GetFileName(modDir);
                 string configPath = Path.Combine(modDir, "SEENG_Config.sbc");
+
                 if (File.Exists(configPath))
                 {
                     var config = ParseConfig(configPath);
                     config.ModPath = modDir;
+                    config.IsActive = isSessionLoaded && activeLocalModNames.Contains(folderName);
+                    if (!config.IsActive) continue;
+
                     string nameToUse = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
                     config.DisplayName = "[DEBUG] " + nameToUse;
+
                     if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
                     {
                         _debugPacks[config.Prefix] = config;
-                        //MyLog.Default.WriteLine($"SEENG_ES: Allocated DEBUG Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
+                        _availablePacks[config.Prefix] = config;
                     }
                 }
             }
@@ -115,29 +141,38 @@ namespace SEENG_ES
 
             foreach (string idDir in Directory.GetDirectories(workshopPath))
             {
+                string idDirName = Path.GetFileName(idDir);
                 string configPath = Path.Combine(idDir, "SEENG_Config.sbc");
+
                 if (File.Exists(configPath))
                 {
                     var config = ParseConfig(configPath);
                     config.ModPath = idDir;
+                    if (ulong.TryParse(idDirName, out ulong workshopId))
+                    {
+                        config.IsActive = isSessionLoaded && activeWorkshopIds.Contains(workshopId);
+                    }
+                    else
+                    {
+                        config.IsActive = false;
+                    }
+
                     config.DisplayName = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
+
                     if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
                     {
                         _workshopPacks[config.Prefix] = config;
-                        //MyLog.Default.WriteLine($"SEENG_ES: Allocated Workshop Addon '{config.Prefix}' in {configPath} ({config.ModPath}).");
+                        _availablePacks[config.Prefix] = config;
                     }
                 }
             }
 
             if (!_availablePacks.ContainsKey("ImprovedVanilla"))
             {
-                MyLog.Default.WriteLine(
-                    "SEENG_ES: CRITICAL: Required pack 'ImprovedVanilla' not found! " +
-                    "Please install the SEENG Engine sounds mod or client mod."
-                );
+                MyLog.Default.WriteLine("SEENG_ES: CRITICAL: Required pack 'ImprovedVanilla' not found!");
             }
 
-            MyLog.Default.WriteLine($"SEENG_ES: Addons: {_workshopPacks.Count}, Debug addons: {_debugPacks.Count}.");
+           // MyLog.Default.WriteLine($"SEENG_ES: Addons: {_workshopPacks.Count}, Debug addons: {_debugPacks.Count}.");
         }
 
         private PackConfig ParseConfig(string configPath)

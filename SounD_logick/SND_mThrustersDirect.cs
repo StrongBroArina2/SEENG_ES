@@ -16,13 +16,14 @@ namespace SEENG_ES
         private const float MAX_ANGULAR_SPEED = 3.293f; // peak rpm se lkmit
         private const float MIN_ANGULAR_THRESHOLD = 0.050f; // min rpm
         private const float LINEAR_SPEED_LIMIT = 0.25f; // max speed limit
+        private const float FADE_RANGE = 0.15f;     
+        private const float MIN_VOLUME = 0.5f;      
 
         private const float PITCH_MIN = 0.85f;  
         private const float PITCH_MAX = 1.65f;   
 
         private static float _targetVolume = 0f;
         private static float _currentVolume = 0f;
-        private static bool _wasActive = false;
 
         public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {
@@ -50,7 +51,6 @@ namespace SEENG_ES
             _emitter = emitter;
             _currentVolume = 0f;
             _targetVolume = 0f;
-            _wasActive = false;
         }
 
         public  void Update(MyEntity3DSoundEmitter emitter, RotationManager rotationManager, SpeedManager speedManager)
@@ -66,24 +66,25 @@ namespace SEENG_ES
 
             bool shouldBeActive = angularOk && linearOk;
 
-            if (shouldBeActive)
+            if (angularSpeed >= MIN_ANGULAR_THRESHOLD)
             {
                 float pitchFactor = MathHelper.Clamp(angularSpeed / MAX_ANGULAR_SPEED, 0f, 1f);
                 float pitch = MathHelper.Lerp(PITCH_MIN, PITCH_MAX, pitchFactor);
-
                 emitter.Sound.FrequencyRatio = pitch;
 
-                _targetVolume = 1f;
-                _wasActive = true;
+                if (linearSpeedNorm <= LINEAR_SPEED_LIMIT)
+                {
+                    _targetVolume = 1f;
+                }
+                else
+                {
+                    float fadeFactor = MathHelper.Clamp((linearSpeedNorm - LINEAR_SPEED_LIMIT) / FADE_RANGE, 0f, 1f);
+                    _targetVolume = MathHelper.Lerp(1f, MIN_VOLUME, fadeFactor);
+                }
             }
             else
             {
                 _targetVolume = 0f;
-
-                if (_wasActive)
-                {
-                    _wasActive = false;
-                }
             }
 
             float fadeSpeed = _targetVolume > _currentVolume ? 8f : 10f;
@@ -93,7 +94,6 @@ namespace SEENG_ES
 
             if (_currentVolume < 0.01f && _targetVolume == 0f)
             {
-                emitter.StopSound(true);
             }
         }
 
@@ -106,7 +106,6 @@ namespace SEENG_ES
             }
             _currentVolume = 0f;
             _targetVolume = 0f;
-            _wasActive = false;
         }
     }
 }
