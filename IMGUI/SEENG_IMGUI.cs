@@ -541,7 +541,7 @@ namespace SEENG_SElauncher.IMGUI
                     "If you want to enable SEENG on any server\n" +
                     "1. double click 'client mod loader' in 'instaled plugins\n" +
                     "2. Enable desired seeng sound addons from here\n\n" +
-                    "*** mean that this addon loaded clientside\n players would need that addon clientloaded too to hear it").X * 0.5f, rightSubY));
+                    "*** mean that this addon loaded clientside or not enabled\n players would need that addon clientloaded too to hear it").X * 0.5f, rightSubY));
                 ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), 
                     "1. Subscribe and enable seeng addons in your world'\n" +
                     "2. Add [SEENG] tag to a cockpit\n" +
@@ -550,7 +550,7 @@ namespace SEENG_SElauncher.IMGUI
                     "If you want to enable SEENG on any server\n" +
                     "1. double click 'client mod loader' in 'instaled plugins\n" +
                     "2. Enable desired seeng sound addons from here\n\n" +
-                    "*** mean that this addon loaded clientside\n players would need that addon clientloaded too to hear it");
+                    "*** mean that this addon loaded clientside or not enabled\n players would need that addon clientloaded too to hear it");
                 // News box
                 var newsBoxX = windowSize.X * 0.64f;
                 var newsBoxY = windowSize.Y * 0.35f;
