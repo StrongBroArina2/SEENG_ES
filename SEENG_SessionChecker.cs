@@ -4,10 +4,7 @@ namespace SEENG_ES
 {
     public class SessionChecker
     {
-        public bool IsOccupied(IMyCockpit cockpit)
-        {
-            return cockpit != null && cockpit.IsOccupied;
-        }
+
 
         public bool HasSEENGTag(IMyCockpit cockpit)
         {

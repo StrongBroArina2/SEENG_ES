@@ -10,8 +10,6 @@ using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
 using static SEENG_SElauncher.SEENG_Managers.SpeedManager;
-using IMyCockpit = Sandbox.ModAPI.IMyCockpit;
-using IMyThrust = Sandbox.ModAPI.IMyThrust;
 
 namespace SEENG_SElauncher.SEENG_Managers
 {
@@ -62,9 +60,7 @@ namespace SEENG_SElauncher.SEENG_Managers
     {
 
         public bool IsThrusting { get; private set; }
-        public bool IsPushActive { get; private set; } = false;
         public Vector3 ControlThrust { get; private set; } = Vector3.Zero;
-        public readonly Stopwatch DecayStartTime = new Stopwatch();
 
         public IMyCockpit _currentCockpit;
         private readonly List<IMySlimBlock> _tempBlocks = new List<IMySlimBlock>();
@@ -92,20 +88,10 @@ namespace SEENG_SElauncher.SEENG_Managers
             }
         }
 
-        public bool IsPushLooping { get; set; } = false;
-
-        public void StartDecay()
-        {
-            DecayStartTime.Restart();
-        }
-
         public void Reset()
         {
             IsThrusting = false;
-            IsPushActive = false;
-            IsPushLooping = false;
             ControlThrust = Vector3.Zero;
-            DecayStartTime.Reset();
             _currentCockpit = null;
         }
     }
