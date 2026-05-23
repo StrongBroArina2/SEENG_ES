@@ -588,7 +588,7 @@ namespace SEENG_SElauncher.IMGUI
                 else
                 {
                     ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX + 20, newsBoxY + 20));
-                    ImGui.Text("No news images loser");
+                    ImGui.Text("Cant find the SEENG Engine Sounds MOD\n\nAdd it as a mode or enable at Client Mod Loader\nIf its enabled restart the game");
                 }
                 // Right window btns
                 var rightButtonY = windowSize.Y * 0.675f;

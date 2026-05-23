@@ -10,10 +10,5 @@ namespace SEENG_ES
         {
             return cockpit != null && (cockpit.DisplayNameText ?? "").Contains("[SEENG]");
         }
-
-        public bool IsLocalPlayerIn(IMyCockpit cockpit)
-        {
-            return cockpit != null && cockpit.IsUnderControl;
-        }
     }
 }

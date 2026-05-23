@@ -8,6 +8,7 @@ using Sandbox.Engine.Utils;
 using Sandbox.ModAPI;
 using SEENG_SElauncher.SEENG_CFG_SYS;
 using VRage.Utils;
+using VRage.FileSystem;
 
 namespace SEENG_ES
 {
@@ -132,10 +133,26 @@ namespace SEENG_ES
             }
 
             // Workshop
-            string workshopPath = Path.GetFullPath(@"..\..\..\workshop\content\244850\");
-            if (!Directory.Exists(workshopPath))
+            string workshopPath = "";
+            try
             {
-                MyLog.Default.WriteLine("Workshop path not found: " + workshopPath);
+                if (!string.IsNullOrEmpty(MyFileSystem.ContentPath))
+                {
+                    string clientWorkshop = Path.GetFullPath(Path.Combine(MyFileSystem.ContentPath, "..", "..", "..", "workshop", "content", "244850"));
+                    if (Directory.Exists(clientWorkshop))
+                    {
+                        workshopPath = clientWorkshop;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.WriteLine("SEENG_ES: Error workshop path: " + ex.Message);
+            }
+
+            if (string.IsNullOrEmpty(workshopPath) || !Directory.Exists(workshopPath))
+            {
+                MyLog.Default.WriteLine("SEENG_ES: Workshop path not found: " + workshopPath);
                 return;
             }
 
