@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,6 +48,10 @@ namespace SEENG_SElauncher.IMGUI
             }
         }
 
+        public void ForceRefresh()
+        {
+            RefreshImages();
+        }
         public string GetCurrentImagePath()
         {
             if (_imagePaths.Count == 0) return null;

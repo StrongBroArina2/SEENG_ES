@@ -22,16 +22,19 @@ namespace SEENG_SElauncher.IMGUI
 {
     public class SEENGRenderComponent : IRenderComponent
     {
-        private bool _showMenu = false;
+        
         private SEENG_modManager _modManager;
         private SLogic _logic;
+        private SEENG_News _newsService;
+        private SessionChecker _sessionChecker = new SessionChecker();
+
+        private bool _showMenu = false;
+        private bool _showSpeedWindow = false;
         private int _selectedIndex = 0;
         private string _descriptionText = "...";
         private string _bigDescText = "...";
         private readonly IImGuiImageService _imageService;
-        private bool _showSpeedWindow = false;
-        private string _speedInputText = "120";
-        private SessionChecker _sessionChecker = new SessionChecker();
+        private string _speedInputText = "120";       
         private RefitResult? _pendingRefitResult;
         private string _selectedPack = "";
         private DateTime _lastToggleTime = DateTime.MinValue;
@@ -39,9 +42,7 @@ namespace SEENG_SElauncher.IMGUI
         private bool _showVolumeWindow = false;
         private float _volumeValue = 0f;       
         private string _volumeInputText = "0";
-
-        private SEENG_News _newsService;
-
+        private bool _newsInitialized = false;
         private bool _showTransmissionWindow = false;
         private SEENG_TransmissionConfig _editingTransmission = null;
         private int _editingGearCount = 5;
@@ -55,6 +56,14 @@ namespace SEENG_SElauncher.IMGUI
         }
         public void OnFrame()
         {
+            if (!_newsInitialized)
+            {
+                if (_modManager.AvailablePacks.Count > 0)
+                {
+                    _newsService.RefreshImages();
+                    _newsInitialized = true;
+                }
+            }
             if (MyAPIGateway.Input?.IsNewKeyPressed(MyKeys.F1) == true && (DateTime.Now - _lastToggleTime).TotalSeconds > 0.1)
             {
                 _lastToggleTime = DateTime.Now;
