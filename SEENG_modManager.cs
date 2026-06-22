@@ -305,7 +305,7 @@ namespace SEENG_ES
             else if (args.Length == 2)
             {
                 string cmd = args[1].ToLower();
-                if (cmd == "debug")
+                if (cmd == "debug" || cmd == "d")
                 {
                     _showDebugPacks = !_showDebugPacks;
                     string mode = _showDebugPacks ? "Debug (AppData)" : "Workshop";

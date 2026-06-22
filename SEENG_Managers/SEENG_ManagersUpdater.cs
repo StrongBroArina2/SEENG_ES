@@ -19,13 +19,18 @@ namespace SEENG_SElauncher.SEENG_Managers
         private readonly ThrustManager _thrustManager;
         private readonly RotationManager _rotationManager;
         private readonly ThrottleThrusterManager _throttleThrusterManager;
+        private readonly SEENG_GridPowerManager _powerManager;
+        private readonly SEENG_BlockStateManager _blockStateManager;
+        
 
         public ManagersUpdater(SpeedManager speedManager, ThrustManager thrustManager)
         {
             _speedManager = speedManager ?? throw new ArgumentNullException(nameof(speedManager));
             _thrustManager = thrustManager ?? throw new ArgumentNullException(nameof(thrustManager));
             _rotationManager = new RotationManager();
-            _throttleThrusterManager = new ThrottleThrusterManager();       
+            _throttleThrusterManager = new ThrottleThrusterManager();
+            _powerManager = new SEENG_GridPowerManager();
+            _blockStateManager = new SEENG_BlockStateManager();
         }
 
         public void Update(IMyCockpit cockpit)
@@ -33,6 +38,8 @@ namespace SEENG_SElauncher.SEENG_Managers
             _thrustManager.Update(cockpit);
             _throttleThrusterManager.Update(cockpit);
             _rotationManager.Update(cockpit);
+            _powerManager.Update(cockpit);
+            _blockStateManager.Update(cockpit);
             if (cockpit != null)
             {
                 _speedManager.Update(cockpit);
@@ -47,12 +54,16 @@ namespace SEENG_SElauncher.SEENG_Managers
         public ThrustManager ThrustManager => _thrustManager;
         public RotationManager RotationManager => _rotationManager;
         public ThrottleThrusterManager ThrottleThrusterManager => _throttleThrusterManager;
+        public SEENG_GridPowerManager PowerManager => _powerManager;
+        public SEENG_BlockStateManager BlockStateManager => _blockStateManager;
 
         public void Reset()
         {
             _thrustManager.Reset();
             _throttleThrusterManager.Reset();
             _speedManager.SetNormalizedSpeed(0f);
+            _powerManager.Reset();
+            _blockStateManager.Reset();
         }
     }
 
@@ -101,8 +112,6 @@ namespace SEENG_SElauncher.SEENG_Managers
         public float MaxSpeed { get; set; }
         private Vector3 _lastVelocity = Vector3.Zero;
         private float _lastTime = 0f;
-        private float _currentAcceleration = 0f;
-        public float Acceleration => _currentAcceleration;
         public float NormalizedSpeed { get; private set; } = 0f;
         public float LastNormalizedSpeed { get; set; } = 0f;
         public readonly Stopwatch AccelerationStartTime = new Stopwatch();
@@ -193,25 +202,7 @@ namespace SEENG_SElauncher.SEENG_Managers
                 return;
             }
 
-            float deltaT = currentTime - _lastTime;
-            if (deltaT > 0f)
-            {
-                Vector3 currentVelocity = grid.Physics.LinearVelocity;
-                Vector3 deltaVel = currentVelocity - _lastVelocity;
-                _currentAcceleration = Vector3.Dot(deltaVel / deltaT, grid.WorldMatrix.Forward);
-
-                if (Math.Abs(_currentAcceleration) > 0.1f)
-                {
-                    if (!AccelerationStartTime.IsRunning)
-                    {
-                        AccelerationStartTime.Restart();
-                    }
-                }
-                else
-                {
-                    AccelerationStartTime.Reset();
-                }
-            }
+            
 
             float speed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
             SetNormalizedSpeed(MathHelper.Clamp(speed / MaxSpeed, 0f, 1f));

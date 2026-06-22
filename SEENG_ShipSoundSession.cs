@@ -5,6 +5,7 @@ using SEENG_SElauncher.SEENG_CFG_SYS;
 using SEENG_SElauncher.SEENG_Managers;
 using VRage.Utils;
 using VRageMath;
+using System.Collections.Generic;
 
 namespace SEENG_SElauncher
 {
@@ -13,6 +14,7 @@ namespace SEENG_SElauncher
         public IMyCockpit Cockpit;
         public SoundHandler Handler;
         public ManagersUpdater Managers;
+        public SEENG_BlockStateManager BlockState;
         public string ActivePrefix;
         private int _logicTick = 0;
         public bool NeedsRestart = false;
@@ -27,6 +29,7 @@ namespace SEENG_SElauncher
             ActivePrefix = packConfig.Prefix;
             TransmissionConfig = SEENG_aConfig.GetTransmissionConfig(cockpit, packConfig.Transmission);
             Handler = new SoundHandler();
+            BlockState = new SEENG_BlockStateManager();
             float maxSpeed = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
             Managers = new ManagersUpdater(new SpeedManager(maxSpeed), new ThrustManager());
 
@@ -57,16 +60,17 @@ namespace SEENG_SElauncher
                 if (currentDataPrefix != ActivePrefix)
                 {
                     ActivePrefix = currentDataPrefix;
-                    Handler.RestartAll(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.ThrottleThrusterManager, TransmissionConfig);
+                    Handler.RestartAll(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.ThrottleThrusterManager, Managers.PowerManager, Managers.BlockStateManager, TransmissionConfig);
                 }
             }
 
             PackConfig shipConfig = modManager.AvailablePacks.ContainsKey(ActivePrefix)
                             ? modManager.AvailablePacks[ActivePrefix]
                             : modManager.CurrentPackConfig;
-            Managers.Update(Cockpit);
-            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.ThrottleThrusterManager, shipConfig,
-        TransmissionConfig);
+            
+            BlockState.Update(Cockpit);
+            Managers.Update(Cockpit);        
+            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.PowerManager, Managers.ThrottleThrusterManager, shipConfig, TransmissionConfig, BlockState);
         }
 
         private void CheckAndUpdateTransmissionConfig()
@@ -103,6 +107,7 @@ namespace SEENG_SElauncher
         public void Dispose()
         {
             Handler.Dispose();
+            BlockState?.Reset();
         }
     }
 }

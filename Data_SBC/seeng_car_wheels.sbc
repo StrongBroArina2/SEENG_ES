@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Sounds>
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>cSeengWheel33_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>150</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Thrusters_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>cSeengWheel66_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>150</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Thrusters_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>cSeengWheel99_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>150</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Thrusters_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengEngineLoop50_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>200</MaxDistance>
+            <Volume>0.5</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Loop>AUDIO_SEENG\Thrusters_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+
+    </Sounds>
+</Definitions>

@@ -23,7 +23,7 @@ namespace SEENG_ES
         public void Update(SEENG_modManager modManager)
         {
             if (MyAPIGateway.Session == null) return;
-            if (_scanCounter++ % 60 == 0)
+            if (_scanCounter++ % 160 == 0)
             {
                 ScanNearbyShips(modManager);
             }
@@ -34,7 +34,7 @@ namespace SEENG_ES
             {
                 var session = kvp.Value;
 
-                if (session.Cockpit == null || session.Cockpit.Closed || !_sessionChecker.HasSEENGTag(session.Cockpit) )
+                if (session.Cockpit == null || session.Cockpit.Closed || !_sessionChecker.HasSEENGTag(session.Cockpit))
                 {
                     _toRemove.Add(kvp.Key);
                     continue;
@@ -84,7 +84,7 @@ namespace SEENG_ES
                         ? modManager.AvailablePacks[prefix]
                         : modManager.CurrentPackConfig;
                             var session = new ShipSoundSession(cockpit, config);
-                            session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager, session.Managers.ThrottleThrusterManager, session.TransmissionConfig);
+                            session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager, session.Managers.ThrottleThrusterManager, session.Managers.PowerManager, session.Managers.BlockStateManager, session.TransmissionConfig);
                             _activeSessions.Add(cockpit.EntityId, session);
                         }
                     }
@@ -133,7 +133,7 @@ namespace SEENG_ES
                             }
                         }
                     }
-                    
+
                     var newSession = new ShipSoundSession(cockpit, shipConfig);
                     newSession.Handler.RestartAll(
                  cockpit,
@@ -142,12 +142,14 @@ namespace SEENG_ES
                  newSession.Managers.SpeedManager,
                  newSession.Managers.RotationManager,
                  newSession.Managers.ThrottleThrusterManager,
+                 newSession.Managers.PowerManager,
+                 newSession.Managers.BlockStateManager,
                  newSession.TransmissionConfig
              );
                     _activeSessions.Add(cockpit.EntityId, newSession);
                 }
                 ScanNearbyShips(modManager);
-                _scanCounter = 60;
+                _scanCounter = 160;
             });
         }
 

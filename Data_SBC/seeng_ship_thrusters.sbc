@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Sounds>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengMainThrusterLoop_</SubtypeId>
+            </Id>           
+            <MaxDistance>1000</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Loop>AUDIO_SEENG\Thrusters_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengMainThrusterStart_</SubtypeId>
+            </Id>          
+            <MaxDistance>1000</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Start>AUDIO_SEENG\Thrusters_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengMainThrusterEnd_</SubtypeId>
+            </Id>   
+            <MaxDistance>1000</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Start>AUDIO_SEENG\Thrusters_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+    </Sounds>
+</Definitions>

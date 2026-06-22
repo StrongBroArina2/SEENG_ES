@@ -28,9 +28,9 @@ namespace SEENG_ES
         public  readonly List<Thruster> _thrusters = new List<Thruster>(6);
         private  readonly Random _rnd = new Random();
         private  string _currentCue = "";
-        private  float MAX_SPEED_THRESHOLD = 0.25f; // max speed limit to play
+        private  float MAX_SPEED_THRESHOLD = 0.25f; // maxspeed
 
-        private const float FADE_OUT_TIME = 0.20f;
+        private const float FADE_OUT_TIME = 1.20f;
 
         private  readonly Vector3[] OFFSETS = new Vector3[]
         {
@@ -42,24 +42,19 @@ namespace SEENG_ES
             new Vector3( 0, -20,   0)  // 5: DOWN
         };
 
-        public  void Restart(IMyCockpit cockpit, string prefix)
+        public void Restart(IMyCockpit cockpit, string prefix)
         {
             StopAll();
 
             if (cockpit == null) return;
 
             _currentCue = string.IsNullOrEmpty(prefix) ? "SeengManeuverThrusters" : $"SeengManeuverThrusters_{prefix}";
-            var pair = new MySoundPair(_currentCue);
-
-            var pos = cockpit.GetPosition();
-            var wm = cockpit.WorldMatrix;
+            // MySoundPair pair = new MySoundPair(_currentCue); 
 
             for (int i = 0; i < 6; i++)
             {
-                var worldOffset = Vector3.TransformNormal(OFFSETS[i], wm);
                 var emitter = new MyEntity3DSoundEmitter((MyEntity)(IMyEntity)cockpit, false, 1f);
                 emitter.Force3D = true;
-                emitter.SetPosition(pos + worldOffset);
 
                 _thrusters.Add(new Thruster
                 {
@@ -70,32 +65,55 @@ namespace SEENG_ES
             }
         }
 
-        public  void Update(IMyCockpit cockpit, RotationManager rotationManager, SpeedManager speedManager)
+        public void Update(IMyCockpit cockpit, RotationManager rotationManager, SpeedManager speedManager)
         {
             if (cockpit == null || rotationManager == null || _thrusters.Count == 0) return;
+
+            var cockpitMatrix = cockpit.WorldMatrix;
+            var cockpitPos = cockpitMatrix.Translation;
+
+            foreach (var t in _thrusters)
+            {
+                if (t.Emitter != null)
+                {
+                    var worldOffset = Vector3.TransformNormal(t.Offset, cockpitMatrix);
+                    t.Emitter.SetPosition(cockpitPos + worldOffset);
+                }
+            }
+
             float normalizedSpeed = speedManager.NormalizedSpeed;
             bool allowManeuver = normalizedSpeed <= MAX_SPEED_THRESHOLD;
-            string debugText = $"Angular Speed: {rotationManager.AngularSpeedRad:F3} rad/s ({rotationManager.AngularSpeedDeg:F1}°/s)\n" +
-                       $"Roll: {rotationManager.RollRate:+0.00;-0.00;0.00} | " +
-                       $"Pitch: {rotationManager.PitchRate:+0.00;-0.00;0.00} | " +
-                       $"Yaw: {rotationManager.YawRate:+0.00;-0.00;0.00}\n" +
-                       $"Maneuver Thrusters: {(allowManeuver ? "ACTIVE" : "INACTIVE (>15% speed)")}";
+            float dt = 1f / 60f;
 
-            ///MyAPIGateway.Utilities.ShowNotification(debugText, 16, allowManeuver ? "White" : "Red");
             if (!allowManeuver)
             {
                 foreach (var t in _thrusters)
                 {
-                    if (t.Emitter?.IsPlaying == true)
+                    if (t.WasActive && !t.IsFading)
                     {
-                        t.Emitter.Sound.VolumeMultiplier = 0f;
-                        t.Emitter.StopSound(true);
+                        t.IsFading = true;
+                        t.FadeTimer = FADE_OUT_TIME;
                     }
+
+                    if (t.IsFading)
+                    {
+                        t.FadeTimer -= dt;
+                        float volume = MathHelper.Clamp(t.FadeTimer / FADE_OUT_TIME, 0f, 1f);
+                        if (t.Emitter?.Sound != null)
+                            t.Emitter.Sound.VolumeMultiplier = volume;
+
+                        if (t.FadeTimer <= 0f)
+                        {
+                            t.Emitter?.StopSound(true);
+                            t.IsFading = false;
+                        }
+                    }
+
                     t.WasActive = false;
-                    t.IsFading = false;
                 }
                 return;
             }
+
 
             Matrix inv = Matrix.Transpose(cockpit.WorldMatrix);
             Vector3 rel = Vector3.TransformNormal(rotationManager.AngularVelocity, inv);
@@ -104,7 +122,6 @@ namespace SEENG_ES
             float pitch = rel.Y;
             float roll = rel.X;
 
-            float dt = 1f / 60f;
 
             UpdateThruster(0, pitch < -0.12f, dt); // BACK
             UpdateThruster(1, pitch > 0.12f, dt); // FORWARD

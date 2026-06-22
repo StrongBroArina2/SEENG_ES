@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Sounds>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengSpeedUP_</SubtypeId>
+            </Id>
+            <MaxDistance>550</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Start>AUDIO_SEENG\Maneuver_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>SeengSpeedDown_</SubtypeId>
+            </Id>
+            <MaxDistance>550</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave Type="D3">
+                    <Start>AUDIO_SEENG\Maneuver_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+    </Sounds>
+</Definitions>	

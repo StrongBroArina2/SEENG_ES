@@ -11,8 +11,8 @@ namespace SEENG_ES
 {
     public class SND_ACDC_ADV
     {
-        private MyEntity3DSoundEmitter _accelEmitter;
-        private MyEntity3DSoundEmitter _deccelEmitter;
+        public MyEntity3DSoundEmitter _accelEmitter;
+        public MyEntity3DSoundEmitter _deccelEmitter;
 
         private string _prefix = "";
         private float _lastSpeed = 0f;
@@ -20,7 +20,11 @@ namespace SEENG_ES
         private float _deccelVolume = 0f;
 
         private const float FADE_STEP = 1f / (60f * 1.5f);
-        private const float MAX_PITCH_SEMITONES = 10f; 
+        private const float MAX_PITCH_SEMITONES = 10f;
+
+        private float _forcedFadeTimer = 0f;
+        private const float MIN_FADE_TIME = 5.3f;
+        private const float SPEED_THRESHOLD = 0.05f;
 
         public void Start(IMyCockpit cockpit, string prefix)
         {
@@ -30,10 +34,10 @@ namespace SEENG_ES
 
             var entity = (MyEntity)(IMyEntity)cockpit;
 
-            _accelEmitter = new MyEntity3DSoundEmitter(entity, true);
+            _accelEmitter = new MyEntity3DSoundEmitter(entity, true, 10f);
             _accelEmitter.Force3D = true;
 
-            _deccelEmitter = new MyEntity3DSoundEmitter(entity, true);
+            _deccelEmitter = new MyEntity3DSoundEmitter(entity, true, 10f);
             _deccelEmitter.Force3D = true;
         }
 
@@ -44,6 +48,7 @@ namespace SEENG_ES
             float currentSpeed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
             float acceleration = currentSpeed - _lastSpeed;
             float normSpeed = speedManager.NormalizedSpeed;
+            float dt = 1f / 60f;
 
             if (acceleration > 0.01f)
             {
@@ -60,6 +65,21 @@ namespace SEENG_ES
                 _accelVolume = MathHelper.Clamp(_accelVolume - FADE_STEP, 0f, 1f);
                 _deccelVolume = MathHelper.Clamp(_deccelVolume - FADE_STEP, 0f, 1f);
             }
+            if (normSpeed < SPEED_THRESHOLD)
+            {
+                _forcedFadeTimer = MathHelper.Clamp(_forcedFadeTimer + dt, 0f, MIN_FADE_TIME);
+                float speedRatio = normSpeed / SPEED_THRESHOLD;
+                float speedSquelch = speedRatio * speedRatio * (3 - 2 * speedRatio);
+                float timeRatio = 1f - (_forcedFadeTimer / MIN_FADE_TIME);
+                float finalSquelch = Math.Max(speedSquelch, timeRatio);
+                _accelVolume *= finalSquelch;
+                _deccelVolume *= finalSquelch;
+            }
+            else
+            {
+                _forcedFadeTimer = 0f;
+            }
+
             float targetPitch = (float)Math.Pow(2, (normSpeed * MAX_PITCH_SEMITONES) / 12.0);
 
             UpdateLayer(_accelEmitter, "SeengACDCacc", _accelVolume, targetPitch);
@@ -101,6 +121,8 @@ namespace SEENG_ES
             _accelVolume = 0f;
             _deccelVolume = 0f;
             _lastSpeed = 0f;
+
+            _forcedFadeTimer = 0f;
         }
     }
 }

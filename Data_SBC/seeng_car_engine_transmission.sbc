@@ -1,0 +1,177 @@
+<?xml version="1.0"?>
+<Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Sounds>
+
+    <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineIdle_</SubtypeId>
+            </Id>
+            <MaxDistance>350</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngine33_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>0.8</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngine66_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>0.8</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngine99_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>0.8</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+
+        
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineLoad33_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+		<Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineLoad66_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineLoad99_</SubtypeId>
+            </Id>
+            
+            <MaxDistance>350</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>true</Loopable>
+            <Waves>
+                <Wave>
+                    <Loop>AUDIO_SEENG\Engine_SEENG\none.wav</Loop>
+                </Wave>
+            </Waves>
+        </Sound>
+
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineRev_</SubtypeId>
+            </Id>
+            <MaxDistance>300</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave>
+                    <Start>AUDIO_SEENG\Engine_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengEngineRelease_</SubtypeId>
+            </Id>
+            <MaxDistance>300</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave>
+                    <Start>AUDIO_SEENG\Engine_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengGearShiftUp_</SubtypeId>
+            </Id>
+            <MaxDistance>100</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave>
+                    <Start>AUDIO_SEENG\Engine_SEENG\none.wav</Start>
+                </Wave>
+            </Waves>
+        </Sound>
+
+        <Sound>
+		    <Id>
+                <TypeId>MyObjectBuilder_AudioDefinition</TypeId>
+                <SubtypeId>ctSeengGearShiftDown_</SubtypeId>
+            </Id>
+            <Category>SHIP</Category>
+            <MaxDistance>100</MaxDistance>
+            <Volume>1.0</Volume>
+            <Loopable>false</Loopable>
+            <Waves>
+                <Wave>
+                   <Start>AUDIO_SEENG\Engine_SEENG\none.wav</Start>
+                </Wave>
+
+            </Waves>
+        </Sound>
+    </Sounds>
+</Definitions>
