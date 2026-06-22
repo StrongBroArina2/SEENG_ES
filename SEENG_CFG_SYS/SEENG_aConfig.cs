@@ -91,6 +91,20 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
 
             return packDefault;
         }
+
+        public static bool IsBlockApiEnabled(IMyCockpit cockpit)
+        {
+            if (cockpit == null) return false;
+            string customData = cockpit.CustomData;
+            if (string.IsNullOrEmpty(customData)) return false;
+
+            MyIni ini = new MyIni();
+            if (ini.TryParse(customData) && ini.ContainsKey("SEENG", "seeng_blockapi"))
+            {
+                return ini.Get("SEENG", "seeng_blockapi").ToBoolean(false);
+            }
+            return false;
+        }
         public static void UpdatePackPrefixInCustomData(IMyCockpit cockpit, string prefix)
         {
             if (cockpit == null) return;
