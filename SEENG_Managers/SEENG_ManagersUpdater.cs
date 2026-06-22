@@ -72,9 +72,7 @@ namespace SEENG_SElauncher.SEENG_Managers
 
         public bool IsThrusting { get; private set; }
         public Vector3 ControlThrust { get; private set; } = Vector3.Zero;
-
         public IMyCockpit _currentCockpit;
-        private readonly List<IMySlimBlock> _tempBlocks = new List<IMySlimBlock>();
 
         public void Update(IMyCockpit cockpit)
         {
@@ -87,16 +85,6 @@ namespace SEENG_SElauncher.SEENG_Managers
             var moveIndicator = cockpit.MoveIndicator;
             bool hasMovementInput = moveIndicator.LengthSquared() > 0.0001f;
             IsThrusting = hasMovementInput;
-
-            // debug thrusters
-            if (cockpit.IsUnderControl)
-            {
-                string status = IsThrusting ? "THRUSTING: ON" : "THRUSTING: OFF";
-                var color = IsThrusting ? "Green" : "Red";
-
-                string debugInfo = $"{status} | V: {moveIndicator.X:F1}, {moveIndicator.Y:F1}, {moveIndicator.Z:F1}";
-               // MyAPIGateway.Utilities.ShowNotification(debugInfo, 16, color);
-            }
         }
 
         public void Reset()
