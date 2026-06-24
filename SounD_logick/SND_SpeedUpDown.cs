@@ -12,7 +12,7 @@ namespace SEENG_ES
 {
     public class SND_SpeedUpDown
     {
-        private MyEntity3DSoundEmitter _emitter;
+        public MyEntity3DSoundEmitter _emitter;
         private string _prefix = "";
 
         private float _lastSpeed = 0f;

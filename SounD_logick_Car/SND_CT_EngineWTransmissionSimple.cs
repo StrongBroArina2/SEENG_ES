@@ -16,10 +16,10 @@ namespace SEENG_ES
         public MyEntity3DSoundEmitter _base33T, _base66T, _base99T;
         public MyEntity3DSoundEmitter _load33T, _load66T, _load99T;
 
-        private MyEntity3DSoundEmitter _gearShiftUpEmitter;
-        private MyEntity3DSoundEmitter _gearShiftDownEmitter;
-        private MyEntity3DSoundEmitter _revEmitter;
-        private MyEntity3DSoundEmitter _releaseEmitter;
+        public MyEntity3DSoundEmitter _gearShiftUpEmitter;
+        public MyEntity3DSoundEmitter _gearShiftDownEmitter;
+        public MyEntity3DSoundEmitter _revEmitter;
+        public MyEntity3DSoundEmitter _releaseEmitter;
 
         private string _prefix = "";
         private bool _wasThrottleActive = false;

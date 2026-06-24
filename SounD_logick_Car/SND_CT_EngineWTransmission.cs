@@ -19,11 +19,11 @@ namespace SEENG_ES
         public MyEntity3DSoundEmitter _load66T;
         public MyEntity3DSoundEmitter _load99T;
 
-        private MyEntity3DSoundEmitter _gearShiftUpEmitter;
-        private MyEntity3DSoundEmitter _gearShiftDownEmitter;
+        public MyEntity3DSoundEmitter _gearShiftUpEmitter;
+        public MyEntity3DSoundEmitter _gearShiftDownEmitter;
 
-        private MyEntity3DSoundEmitter _revEmitter;
-        private MyEntity3DSoundEmitter _releaseEmitter;
+        public MyEntity3DSoundEmitter _revEmitter;
+        public MyEntity3DSoundEmitter _releaseEmitter;
         private bool _wasThrusting = false;
         private readonly Stopwatch _revCooldown = new Stopwatch();
         private const float REV_COOLDOWN_TIME = 6.0f;
@@ -276,7 +276,7 @@ namespace SEENG_ES
 
             float ratio = Math.Max(rpmNorm / Math.Max(layerRpmNorm, 0.01f), 0.1f);
             float semitones = (float)(12 * Math.Log(ratio, 2));
-            semitones = MathHelper.Clamp(semitones, -6f, 6f);
+            semitones = MathHelper.Clamp(semitones, -7f, 7f);
             emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
         }
 
