@@ -1,4 +1,4 @@
-﻿using Sandbox.Game.Entities;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Audio;
 using VRageMath;
@@ -24,25 +24,27 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
         public string Prefix { get; set; }
         public float MaxEnginePitchShift { get; set; }
         public float MaxEngine50PitchShift { get; set; }
+        public float MaxEnginePowerPitchShift { get; set; }
         public List<VolumePoint> EngineVolumes { get; set; }
         public List<VolumePoint> Engine50Volumes { get; set; }
-        public string ModPath { get; set; } = "";
-        public string DisplayName { get; set; } = "";
-        public string FriendlyName { get; set; } = "";
-        public SEENG_TransmissionConfig Transmission { get; set; } = SEENG_TransmissionConfig.Default;
-
-        public bool IsActive { get; set; } // workshop mods
-
-
-
-        public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null, SEENG_TransmissionConfig transmission = null)
+        public string ModPath { get; set; }
+        public string DisplayName { get; set; }
+        public string FriendlyName { get; set; }
+        public SEENG_TransmissionConfig Transmission { get; set; }
+        public bool IsActive { get; set; }
+        public PackConfig(string prefix = "", float maxEnginePitchShift = 15f, float maxEngine50PitchShift = 15f, float maxEnginePowerPitchShift = 15f, List<VolumePoint> engineVolumes = null, List<VolumePoint> engine50Volumes = null, SEENG_TransmissionConfig transmission = null)
         {
             Prefix = prefix;
             MaxEnginePitchShift = maxEnginePitchShift;
             MaxEngine50PitchShift = maxEngine50PitchShift;
+            MaxEnginePowerPitchShift = maxEnginePowerPitchShift;
             EngineVolumes = engineVolumes ?? new List<VolumePoint>();
             Engine50Volumes = engine50Volumes ?? new List<VolumePoint>();
             Transmission = transmission ?? SEENG_TransmissionConfig.Default;
+            ModPath = "";
+            DisplayName = "";
+            FriendlyName = "";
+            IsActive = false;
         }
     }
     public  class SEENG_enginesParametrs
