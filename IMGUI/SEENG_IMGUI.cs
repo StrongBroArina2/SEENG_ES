@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using CringePlugins.Abstractions;
 using CringePlugins.Services;
 using Sandbox.ModAPI;
@@ -92,7 +92,7 @@ namespace SEENG_SElauncher.IMGUI
             var displaySize = ImGui.GetIO().DisplaySize;
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.FirstUseEver, new System.Numerics.Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowSize(new System.Numerics.Vector2(displaySize.X * 0.75f, displaySize.Y * 0.75f), ImGuiCond.Once);
-            if (!ImGui.Begin("SEENG Engine Sounds 1.3.3", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
+            if (!ImGui.Begin("SEENG Engine Sounds 1.4.0", ref _showMenu, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoBackground))
             {
                 ImGui.End();
                 return;
@@ -197,7 +197,7 @@ namespace SEENG_SElauncher.IMGUI
                 if (ImGui.Button("Volume Settings WIP", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
                     _showVolumeWindow = true;
-                    _volumeValue = SEENG_VolumeManager.GetCurrentPercent();
+                    _volumeValue = SEENG_VolumeManager1.GetMultiplier();
                 }
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX, subButtonY));
                 if (ImGui.Button("Set Ship Speed", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
@@ -416,60 +416,63 @@ namespace SEENG_SElauncher.IMGUI
                 if (_showVolumeWindow)
                 {
                     ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
-                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(460, 280), ImGuiCond.Once);
+                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(440, 260), ImGuiCond.Once);
 
                     bool volumeWindowOpen = true;
-                    if (ImGui.Begin("Engine Sound Volume WIP", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
+                    if (ImGui.Begin("...", ref volumeWindowOpen, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse))
                     {
                         ImGui.PushStyleColor(ImGuiCol.Text, new System.Numerics.Vector4(0.9f, 0.9f, 0.9f, 1f));
-                        ImGui.SetCursorPosX((ImGui.GetWindowWidth() - ImGui.CalcTextSize("Engine Sound Volume").X) * 0.5f);
-                        ImGui.Text("Engine Sound Volume WIP");
+                        ImGui.SetCursorPosX((ImGui.GetWindowWidth() - ImGui.CalcTextSize("SEENG Sounds Volume").X) * 0.5f);
+                        ImGui.Text("SEENG Sounds Volume");
                         ImGui.PopStyleColor();
-                        ImGui.PopFont();
 
                         ImGui.Spacing();
                         ImGui.Spacing();
-
-                        // Slider
-                        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - 40f);
-                        if (ImGui.SliderFloat("##volumeSlider", ref _volumeValue, -100f, 100f, "%.0f %"))
+                        ImGui.Text("Volume Slider:");
+                        ImGui.SetNextItemWidth(-1f); 
+                        if (ImGui.SliderFloat("##volumeSlider", ref _volumeValue, 0f, 200f, "%.0f %%"))
                         {
                             _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+                            SEENG_VolumeManager1.MasterVolume = _volumeValue;
                         }
 
                         ImGui.Spacing();
 
-                        // Exact
+
                         ImGui.Text("Exact Percentage:");
-                        ImGui.SetNextItemWidth(ImGui.GetWindowWidth() - 40f);
-                        if (ImGui.InputText("##volumeInput", ref _volumeInputText, 10, ImGuiInputTextFlags.CharsDecimal | ImGuiInputTextFlags.EnterReturnsTrue))
+                        ImGui.SetNextItemWidth(-1f);
+                        if (ImGui.InputText("##volumeInput", ref _volumeInputText, 10, ImGuiInputTextFlags.CharsDecimal | ImGuiInputTextFlags.AutoSelectAll))
                         {
                             if (float.TryParse(_volumeInputText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsed))
                             {
-                                _volumeValue = Math.Clamp(parsed, -100f, 100f);
-                                _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+                                _volumeValue = System.Math.Clamp(parsed, 0f, 200f);
+                                SEENG_VolumeManager1.MasterVolume = _volumeValue;
                             }
                         }
 
                         ImGui.Spacing();
+                        ImGui.Separator();
                         ImGui.Spacing();
 
-                        //btn
-                        float volButtonWidth = 140f;
+                        float volButtonWidth = 130f;
                         float volSpacing = (ImGui.GetWindowWidth() - volButtonWidth * 2) * 0.5f;
 
                         ImGui.SetCursorPosX(volSpacing);
-                        if (ImGui.Button("Apply", new System.Numerics.Vector2(volButtonWidth, 40)))
+                        if (ImGui.Button("Apply", new System.Numerics.Vector2(volButtonWidth, 35)))
                         {
-                            SEENG_VolumeManager.SetVolume(_volumeValue);
-                            MyAPIGateway.Utilities.ShowNotification($"Volume offset set to {_volumeValue:+0;-0;0} %", 3000, MyFontEnum.Green);
+                            SEENG_VolumeManager1.SetVolume(_volumeValue);
+                            Sandbox.ModAPI.MyAPIGateway.Utilities.ShowNotification($"Volume set to {_volumeValue:0} %", 3000);
 
                             _showVolumeWindow = false;
                         }
+
                         ImGui.SameLine();
                         ImGui.SetCursorPosX(ImGui.GetWindowWidth() - volButtonWidth - volSpacing);
-                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(volButtonWidth, 40)))
+
+                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(volButtonWidth, 35)))
                         {
+                            _volumeValue = SEENG_VolumeManager1.MasterVolume;
+                            _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
                             _showVolumeWindow = false;
                         }
                     }
@@ -597,7 +600,7 @@ namespace SEENG_SElauncher.IMGUI
                 else
                 {
                     ImGui.SetCursorPos(new System.Numerics.Vector2(newsBoxX + 20, newsBoxY + 20));
-                    ImGui.Text("Cant find the SEENG Engine Sounds MOD\n\nAdd it as a mode or enable at Client Mod Loader\nIf its enabled restart the game");
+                    ImGui.Text("Cant find the 'SEENG Engine Sounds 1.X.X' MOD\n\nAdd it as a mod to your world, or enable at Client Mod Loader\nIf its enabled restart the game");
                 }
                 // Right window btns
                 var rightButtonY = windowSize.Y * 0.675f;
