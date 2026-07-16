@@ -1,4 +1,4 @@
-﻿using Sandbox.Game.Entities;
+using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Audio;
 using VRageMath;

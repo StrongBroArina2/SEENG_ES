@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+using ImGuiNET;
 using CringePlugins.Abstractions;
 using CringePlugins.Services;
 using Sandbox.ModAPI;
