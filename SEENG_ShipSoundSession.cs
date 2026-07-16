@@ -6,6 +6,7 @@ using SEENG_SElauncher.SEENG_Managers;
 using VRage.Utils;
 using VRageMath;
 using System.Collections.Generic;
+using VRage.Game.ModAPI;
 
 namespace SEENG_SElauncher
 {
@@ -21,12 +22,18 @@ namespace SEENG_SElauncher
         public PackConfig Config;
         public SEENG_TransmissionConfig TransmissionConfig;
         private SEENG_TransmissionConfig _transmission = SEENG_TransmissionConfig.Default;
+        public VehicleClass ClassType { get; private set; } = VehicleClass.Unknown;
+        public bool IsDefaultSession { get; private set; } = false;
+        public List<IMyThrust> GridThrusters { get; private set; } = new List<IMyThrust>();
+        public List<IMyMotorSuspension> GridSuspensions { get; private set; } = new List<IMyMotorSuspension>();
 
-        public ShipSoundSession(IMyCockpit cockpit, PackConfig packConfig)
+        public ShipSoundSession(IMyCockpit cockpit, PackConfig packConfig, VehicleClass vehicleClass = VehicleClass.Unknown, bool isDefault = false)
         {
             Cockpit = cockpit;
             Config = packConfig;
             ActivePrefix = packConfig.Prefix;
+            ClassType = vehicleClass;
+            IsDefaultSession = isDefault;
             TransmissionConfig = SEENG_aConfig.GetTransmissionConfig(cockpit, packConfig.Transmission);
             Handler = new SoundHandler();
             BlockState = new SEENG_BlockStateManager();
@@ -44,6 +51,12 @@ namespace SEENG_SElauncher
             }
         }
 
+        public void SetGridBlocks(List<IMyThrust> thrusters, List<IMyMotorSuspension> suspensions)
+        {
+            GridThrusters = thrusters ?? new List<IMyThrust>();
+            GridSuspensions = suspensions ?? new List<IMyMotorSuspension>();
+        }
+
         public void Update(SEENG_modManager modManager)
         {
             if (Cockpit == null || Cockpit.Closed) return;
@@ -51,16 +64,34 @@ namespace SEENG_SElauncher
             if (_logicTick++ % 200 == 0)
             {
                 CheckAndUpdateTransmissionConfig();
-                string currentDataPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(Cockpit, null);
-                if (string.IsNullOrEmpty(currentDataPrefix))
-                {
-                    currentDataPrefix = "ImprovedVanilla";
-                }
 
-                if (currentDataPrefix != ActivePrefix)
+                if (IsDefaultSession)
                 {
-                    ActivePrefix = currentDataPrefix;
-                    Handler.RestartAll(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.ThrottleThrusterManager, Managers.PowerManager, Managers.BlockStateManager, TransmissionConfig);
+                    if ((Cockpit.DisplayNameText ?? "").Contains("[SEENG]"))
+                    {
+                        IsDefaultSession = false;
+                        string newPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(Cockpit, ActivePrefix);
+                        if (!string.IsNullOrEmpty(newPrefix) && newPrefix != ActivePrefix)
+                        {
+                            ActivePrefix = newPrefix;
+                            Handler.RestartAll(Cockpit, ActivePrefix, Managers, TransmissionConfig);
+                        }
+                        return;
+                    }
+                }
+                else
+                {
+                    string currentDataPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(Cockpit, null);
+                    if (string.IsNullOrEmpty(currentDataPrefix))
+                    {
+                        currentDataPrefix = "ImprovedVanilla";
+                    }
+
+                    if (currentDataPrefix != ActivePrefix)
+                    {
+                        ActivePrefix = currentDataPrefix;
+                        Handler.RestartAll(Cockpit, ActivePrefix, Managers, TransmissionConfig);
+                    }
                 }
             }
 
@@ -70,7 +101,7 @@ namespace SEENG_SElauncher
             
             BlockState.Update(Cockpit);
             Managers.Update(Cockpit);        
-            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers.ThrustManager, Managers.SpeedManager, Managers.RotationManager, Managers.PowerManager, Managers.ThrottleThrusterManager, shipConfig, TransmissionConfig, BlockState);
+            Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers, shipConfig);
         }
 
         private void CheckAndUpdateTransmissionConfig()

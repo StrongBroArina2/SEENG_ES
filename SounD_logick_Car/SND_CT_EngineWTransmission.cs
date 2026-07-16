@@ -18,13 +18,10 @@ namespace SEENG_ES
         public MyEntity3DSoundEmitter _load33T;
         public MyEntity3DSoundEmitter _load66T;
         public MyEntity3DSoundEmitter _load99T;
-
         public MyEntity3DSoundEmitter _gearShiftUpEmitter;
         public MyEntity3DSoundEmitter _gearShiftDownEmitter;
-
         public MyEntity3DSoundEmitter _revEmitter;
         public MyEntity3DSoundEmitter _releaseEmitter;
-        private bool _wasThrusting = false;
         private readonly Stopwatch _revCooldown = new Stopwatch();
         private const float REV_COOLDOWN_TIME = 6.0f;
         private readonly Stopwatch _relCooldown = new Stopwatch();
@@ -173,7 +170,6 @@ namespace SEENG_ES
             SetVolume(_load66T, base66Vol * effectiveLoadMix);
             SetVolume(_load99T, base99Vol * effectiveLoadMix);
 
-            ApplyLayerPitch(_idleT, _smoothedRpmNorm, 0.2f);
             ApplyLayerPitch(_base33T, _smoothedRpmNorm, 0.33f);
             ApplyLayerPitch(_base66T, _smoothedRpmNorm, 0.66f);
             ApplyLayerPitch(_base99T, _smoothedRpmNorm, 0.99f);
@@ -276,7 +272,7 @@ namespace SEENG_ES
 
             float ratio = Math.Max(rpmNorm / Math.Max(layerRpmNorm, 0.01f), 0.1f);
             float semitones = (float)(12 * Math.Log(ratio, 2));
-            semitones = MathHelper.Clamp(semitones, -7f, 7f);
+            semitones = MathHelper.Clamp(semitones, -13f, 13f);
             emitter.Sound.FrequencyRatio = MyAudio.Static.SemitonesToFrequencyRatio(semitones);
         }
 
@@ -311,7 +307,6 @@ namespace SEENG_ES
 
             ResetState();
             _revCooldown.Reset();
-            _wasThrusting = false;
         }
 
         public void Stop()
@@ -331,7 +326,6 @@ namespace SEENG_ES
 
             ResetState();
             _revCooldown.Reset();
-            _wasThrusting = false;
         }
 
         private void StopEmitter(ref MyEntity3DSoundEmitter emitter)

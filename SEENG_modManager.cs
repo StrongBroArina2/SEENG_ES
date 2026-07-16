@@ -17,11 +17,12 @@ namespace SEENG_ES
         public Dictionary<string, PackConfig> _availablePacks = new Dictionary<string, PackConfig>();
         public PackConfig CurrentPackConfig { get; set; } = new PackConfig { Prefix = "", MaxEnginePitchShift = 15f, MaxEngine50PitchShift = 15f };
         public string CurrentPack { get; private set; } = "";
+
         public Dictionary<string, PackConfig> _workshopPacks = new Dictionary<string, PackConfig>();
         public Dictionary<string, PackConfig> _debugPacks = new Dictionary<string, PackConfig>();
-        SEENG_TransmissionConfig transmission = new SEENG_TransmissionConfig();
-        private bool _showDebugPacks = false;
 
+        private bool _showDebugPacks = false;
+        private bool _initialized = false;
 
         public bool ShowDebugPacks
         {
@@ -29,36 +30,20 @@ namespace SEENG_ES
             set => _showDebugPacks = value;
         }
 
-        public Dictionary<string, PackConfig> AvailablePacks
-        {
-            get
-            {
-                return _showDebugPacks ? _debugPacks : _workshopPacks;
-            }
-        }
-
-
-        public void SetCurrentPack(string prefix)
-        {
-            if (_availablePacks.ContainsKey(prefix))
-            {
-                CurrentPackConfig = _availablePacks[prefix];
-                MyLog.Default.WriteLine($"SEENG_ES: Addon '{prefix}'");
-            }
-            else
-            {
-            }
-        }
+        public Dictionary<string, PackConfig> AvailablePacks =>
+            _showDebugPacks ? _debugPacks : _workshopPacks;
 
         public void Init()
         {
+            if (_initialized || MyAPIGateway.Session == null)
+                return;
             if (MyAPIGateway.Session != null)
             {
-                ScanMods();
+                return;
             }
-            else
-            {
-            }
+
+            _initialized = true;
+            ScanMods();
         }
 
         public void SubscribeToChat(SLogic logic)
@@ -79,80 +64,74 @@ namespace SEENG_ES
 
         public void ScanMods()
         {
+            if (MyAPIGateway.Session == null) return;
+
+            _availablePacks.Clear();
+            _debugPacks.Clear();
+            _workshopPacks.Clear();
+
+            var activeWorkshopIds = new HashSet<ulong>();
+            var activeLocalModNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (MyAPIGateway.Session.Mods != null)
+            {
+                foreach (var modItem in MyAPIGateway.Session.Mods)
+                {
+                    if (modItem.PublishedFileId != 0)
+                        activeWorkshopIds.Add(modItem.PublishedFileId);
+                    else if (!string.IsNullOrEmpty(modItem.Name))
+                        activeLocalModNames.Add(modItem.Name);
+                }
+            }          
+            ScanLocalDebugMods(activeLocalModNames);          
+            ScanWorkshopMods(activeWorkshopIds);
+
+            if (!_availablePacks.ContainsKey("ImprovedVanilla"))
+            {
+                MyLog.Default.WriteLine("SEENG_ES: CRITICAL: Required addon 'ImprovedVanilla' not found!");
+            }
+
+            MyLog.Default.WriteLine($"SEENG_ES: Loaded {_workshopPacks.Count} workshop addons + {_debugPacks.Count} debug packs.");
+        }
+        // Local
+        private void ScanLocalDebugMods(HashSet<string> activeLocalModNames)
+        {
             string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             if (string.IsNullOrEmpty(appDataPath)) return;
 
             string modsPath = Path.Combine(appDataPath, "SpaceEngineers", "Mods");
             if (!Directory.Exists(modsPath)) return;
 
-            _availablePacks.Clear();
-            _debugPacks.Clear();
-            _workshopPacks.Clear();
-
-            HashSet<ulong> activeWorkshopIds = new HashSet<ulong>();
-            HashSet<string> activeLocalModNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            bool isSessionLoaded = MyAPIGateway.Session?.Mods != null;
-            if (isSessionLoaded)
-            {
-                foreach (var modItem in MyAPIGateway.Session.Mods)
-                {
-                    if (modItem.PublishedFileId != 0)
-                    {
-                        activeWorkshopIds.Add(modItem.PublishedFileId);
-                    }
-                    else if (!string.IsNullOrEmpty(modItem.Name))
-                    {
-                        activeLocalModNames.Add(modItem.Name);
-                    }
-                }
-            }
-
-            // Local
             foreach (string modDir in Directory.GetDirectories(modsPath))
             {
                 string folderName = Path.GetFileName(modDir);
                 string configPath = Path.Combine(modDir, "SEENG_Config.sbc");
 
-                if (File.Exists(configPath))
+                if (!File.Exists(configPath)) continue;
+
+                var config = ParseConfig(configPath);
+                config.ModPath = modDir;
+                config.IsActive = activeLocalModNames.Contains(folderName);
+
+                if (!config.IsActive) continue;
+
+                config.DisplayName = "[DEBUG] " + (string.IsNullOrWhiteSpace(config.FriendlyName)
+                    ? config.Prefix
+                    : config.FriendlyName);
+
+                if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
                 {
-                    var config = ParseConfig(configPath);
-                    config.ModPath = modDir;
-                    config.IsActive = isSessionLoaded && activeLocalModNames.Contains(folderName);
-                    if (!config.IsActive) continue;
-
-                    string nameToUse = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
-                    config.DisplayName = "[DEBUG] " + nameToUse;
-
-                    if (!string.IsNullOrEmpty(config.Prefix) && !_debugPacks.ContainsKey(config.Prefix))
-                    {
-                        _debugPacks[config.Prefix] = config;
-                        _availablePacks[config.Prefix] = config;
-                    }
+                    _debugPacks[config.Prefix] = config;
+                    _availablePacks[config.Prefix] = config;
                 }
             }
-
-            // Workshop
-            string workshopPath = "";
-            try
-            {
-                if (!string.IsNullOrEmpty(MyFileSystem.ContentPath))
-                {
-                    string clientWorkshop = Path.GetFullPath(Path.Combine(MyFileSystem.ContentPath, "..", "..", "..", "workshop", "content", "244850"));
-                    if (Directory.Exists(clientWorkshop))
-                    {
-                        workshopPath = clientWorkshop;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MyLog.Default.WriteLine("SEENG_ES: Error workshop path: " + ex.Message);
-            }
-
+        }
+        // Workshop
+        private void ScanWorkshopMods(HashSet<ulong> activeWorkshopIds)
+        {
+            string workshopPath = GetWorkshopPath();
             if (string.IsNullOrEmpty(workshopPath) || !Directory.Exists(workshopPath))
             {
-                MyLog.Default.WriteLine("SEENG_ES: Workshop path not found: " + workshopPath);
+                MyLog.Default.WriteLine("SEENG_ES: Workshop path not found.");
                 return;
             }
 
@@ -161,35 +140,43 @@ namespace SEENG_ES
                 string idDirName = Path.GetFileName(idDir);
                 string configPath = Path.Combine(idDir, "SEENG_Config.sbc");
 
-                if (File.Exists(configPath))
+                if (!File.Exists(configPath)) continue;
+
+                var config = ParseConfig(configPath);
+                config.ModPath = idDir;
+
+                if (ulong.TryParse(idDirName, out ulong workshopId))
                 {
-                    var config = ParseConfig(configPath);
-                    config.ModPath = idDir;
-                    if (ulong.TryParse(idDirName, out ulong workshopId))
-                    {
-                        config.IsActive = isSessionLoaded && activeWorkshopIds.Contains(workshopId);
-                    }
-                    else
-                    {
-                        config.IsActive = false;
-                    }
+                    config.IsActive = activeWorkshopIds.Contains(workshopId);
+                }
 
-                    config.DisplayName = string.IsNullOrWhiteSpace(config.FriendlyName) ? config.Prefix : config.FriendlyName;
+                config.DisplayName = string.IsNullOrWhiteSpace(config.FriendlyName)
+                    ? config.Prefix
+                    : config.FriendlyName;
 
-                    if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
-                    {
-                        _workshopPacks[config.Prefix] = config;
-                        _availablePacks[config.Prefix] = config;
-                    }
+                if (!string.IsNullOrEmpty(config.Prefix) && !_workshopPacks.ContainsKey(config.Prefix))
+                {
+                    _workshopPacks[config.Prefix] = config;
+                    _availablePacks[config.Prefix] = config;
                 }
             }
+        }
 
-            if (!_availablePacks.ContainsKey("ImprovedVanilla"))
+        private string GetWorkshopPath()
+        {
+            try
             {
-                MyLog.Default.WriteLine("SEENG_ES: CRITICAL: Required pack 'ImprovedVanilla' not found!");
-            }
+                if (string.IsNullOrEmpty(MyFileSystem.ContentPath))
+                    return null;
 
-           // MyLog.Default.WriteLine($"SEENG_ES: Addons: {_workshopPacks.Count}, Debug addons: {_debugPacks.Count}.");
+                string path = Path.GetFullPath(Path.Combine(MyFileSystem.ContentPath, "..", "..", "..", "workshop", "content", "244850"));
+                return Directory.Exists(path) ? path : null;
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.WriteLine("SEENG_ES: Error getting workshop path: " + ex.Message);
+                return null;
+            }
         }
 
         private PackConfig ParseConfig(string configPath)
@@ -202,6 +189,7 @@ namespace SEENG_ES
                     string friendlyName = "";
                     float maxPitchShift = 15f;
                     float max50PitchShift = 15f;
+                    float maxACDCAdvPitch = 10f;
                     List<VolumePoint> engineVolumes = new List<VolumePoint>();
                     List<VolumePoint> engine50Volumes = new List<VolumePoint>();
                     var transmission = new SEENG_TransmissionConfig();
@@ -254,6 +242,11 @@ namespace SEENG_ES
                                 }
                                 break;
 
+                            case "MaxACDCAdvPitchShift":
+                                reader.Read();
+                                if (float.TryParse(reader.Value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float acdcPitchVal))
+                                    maxACDCAdvPitch = acdcPitchVal;
+                                break;
 
                         }
                     }
@@ -267,6 +260,7 @@ namespace SEENG_ES
                         FriendlyName = friendlyName,
                         MaxEnginePitchShift = maxPitchShift,
                         MaxEngine50PitchShift = max50PitchShift,
+                        MaxACDCAdvPitchSemitones = maxACDCAdvPitch,
                         EngineVolumes = engineVolumes,
                         Engine50Volumes = engine50Volumes,
                         Transmission = transmission ?? SEENG_TransmissionConfig.Default
@@ -312,7 +306,7 @@ namespace SEENG_ES
                     MyAPIGateway.Utilities.ShowMessage("SEENG_ES", $"Switched to {mode} addons.");
                     return;
                 }
-                else if (cmd == "reload")
+                else if (cmd == "reload" || cmd == "r")
                 {
                     ScanMods();
                     string currentPrefix = CurrentPackConfig.Prefix;

@@ -1,4 +1,4 @@
-using ImGuiNET;
+﻿using ImGuiNET;
 using CringePlugins.Abstractions;
 using CringePlugins.Services;
 using Sandbox.ModAPI;
@@ -22,7 +22,7 @@ namespace SEENG_SElauncher.IMGUI
 {
     public class SEENGRenderComponent : IRenderComponent
     {
-        
+
         private SEENG_modManager _modManager;
         private SLogic _logic;
         private SEENG_News _newsService;
@@ -34,19 +34,23 @@ namespace SEENG_SElauncher.IMGUI
         private string _descriptionText = "...";
         private string _bigDescText = "...";
         private readonly IImGuiImageService _imageService;
-        private string _speedInputText = "120";       
+        private string _speedInputText = "120";
         private RefitResult? _pendingRefitResult;
         private string _selectedPack = "";
         private DateTime _lastToggleTime = DateTime.MinValue;
 
         private bool _showVolumeWindow = false;
-        private float _volumeValue = 0f;       
+        private float _volumeValue = 0f;
         private string _volumeInputText = "0";
         private bool _newsInitialized = false;
         private bool _showTransmissionWindow = false;
         private SEENG_TransmissionConfig _editingTransmission = null;
         private int _editingGearCount = 5;
         private int _editingMode = 1;
+        private bool _showSettingsWindow = false;
+        private bool _debugMode = false;
+        private Dictionary<VehicleClass, string> _vehicleClassPackMapping = new Dictionary<VehicleClass, string>();
+        private Dictionary<VehicleClass, string> _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>();
         public SEENGRenderComponent(SEENG_modManager modManager, SLogic logic, IImGuiImageService imageService = null)
         {
             _modManager = modManager ?? throw new ArgumentNullException(nameof(modManager));
@@ -80,9 +84,9 @@ namespace SEENG_SElauncher.IMGUI
             var io = ImGui.GetIO();
             if (_showMenu)
             {
-                io.MouseDrawCursor = true; 
-                io.WantCaptureMouse = true;    
-                io.WantCaptureKeyboard = true;  
+                io.MouseDrawCursor = true;
+                io.WantCaptureMouse = true;
+                io.WantCaptureKeyboard = true;
             }
             else
             {
@@ -194,7 +198,7 @@ namespace SEENG_SElauncher.IMGUI
                 var subButtonWidth = windowSize.X * 0.1215f;
                 var subButtonHeight = windowSize.Y * 0.0778f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX - listboxSize.X * 0.5f, subButtonY));
-                if (ImGui.Button("Volume Settings WIP", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+                if (ImGui.Button("Volume Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
                     _showVolumeWindow = true;
                     _volumeValue = SEENG_VolumeManager1.GetMultiplier();
@@ -241,6 +245,15 @@ namespace SEENG_SElauncher.IMGUI
                     }
                 }
 
+                // ==================== Settings Button
+                float settingsOffsetY = transmissionOffsetY + subButtonHeight + 10f;
+                ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX + listboxSize.X * 0.0f, settingsOffsetY));
+                if (ImGui.Button("Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
+                {
+                    _showSettingsWindow = true;
+                    InitializeVehicleClassMapping();
+                }
+
                 // ==================== TRANSMISSION SETTINGS WINDOW
                 if (_showTransmissionWindow && _editingTransmission != null)
                 {
@@ -257,7 +270,7 @@ namespace SEENG_SElauncher.IMGUI
                             _editingGearCount = Math.Max(2, _editingTransmission.GearRatios.Count - 1);
                         }
 
-               
+
                         ImGui.Text("Mode:");
                         ImGui.SameLine();
                         if (ImGui.RadioButton("RPM-based", _editingMode == 0)) _editingMode = 0;
@@ -377,13 +390,13 @@ namespace SEENG_SElauncher.IMGUI
                                 MyIni ini = new MyIni();
                                 ini.TryParse(cockpit.CustomData);
 
-                                if (_editingMode == 0) 
+                                if (_editingMode == 0)
                                 {
                                     ini.Set("SEENG_CAR", "GearRatios", string.Join(",", _editingTransmission.GearRatios));
                                     ini.Set("SEENG_CAR", "UpshiftRPM", string.Join(",", _editingTransmission.UpshiftRPM));
                                     ini.Set("SEENG_CAR", "DownshiftRPM", string.Join(",", _editingTransmission.DownshiftRPM));
                                 }
-                                else 
+                                else
                                 {
                                     ini.Set("SEENG_CAR", "GearRatiosS", string.Join(",", _editingTransmission.GearRatiosS));
                                     ini.Set("SEENG_CAR", "UpshiftSpeedThresholds", string.Join(",", _editingTransmission.UpshiftSpeedThresholds));
@@ -412,6 +425,110 @@ namespace SEENG_SElauncher.IMGUI
 
 
 
+                // ==================== SETTINGS WINDOW
+                if (_showSettingsWindow)
+                {
+                    ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
+                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(750, 900), ImGuiCond.Once);
+
+                    bool settingsWindowOpen = true;
+                    if (ImGui.Begin("Settings", ref settingsWindowOpen, ImGuiWindowFlags.NoResize))
+                    {
+                        ImGui.Text("Vehicle Class Configuration");
+                        ImGui.Separator();
+                        ImGui.Spacing();
+
+                        // S_Ship Dropdown
+                        ImGui.Text("Small Ship:");
+                        ImGui.SetNextItemWidth(-1f);
+                        string[] smallShipPacks = _modManager.AvailablePacks.Keys.ToArray();
+                        int smallShipIndex = Array.IndexOf(smallShipPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.S_Ship) ? _tempVehicleClassPackMapping[VehicleClass.S_Ship] : "ImprovedVanilla");
+                        if (smallShipIndex < 0) smallShipIndex = 0;
+                        if (ImGui.Combo("##smallShip", ref smallShipIndex, smallShipPacks, smallShipPacks.Length))
+                        {
+                            _tempVehicleClassPackMapping[VehicleClass.S_Ship] = smallShipPacks[smallShipIndex];
+                        }
+
+                        ImGui.Spacing();
+
+                        // L_Ship Dropdown
+                        ImGui.Text("Large Ship:");
+                        ImGui.SetNextItemWidth(-1f);
+                        string[] largeShipPacks = _modManager.AvailablePacks.Keys.ToArray();
+                        int largeShipIndex = Array.IndexOf(largeShipPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.L_Ship) ? _tempVehicleClassPackMapping[VehicleClass.L_Ship] : "ImprovedVanilla");
+                        if (largeShipIndex < 0) largeShipIndex = 0;
+                        if (ImGui.Combo("##largeShip", ref largeShipIndex, largeShipPacks, largeShipPacks.Length))
+                        {
+                            _tempVehicleClassPackMapping[VehicleClass.L_Ship] = largeShipPacks[largeShipIndex];
+                        }
+
+                        ImGui.Spacing();
+
+                        // S_Rover Dropdown
+                        ImGui.Text("Small Rover:");
+                        ImGui.SetNextItemWidth(-1f);
+                        string[] smallRoverPacks = _modManager.AvailablePacks.Keys.ToArray();
+                        int smallRoverIndex = Array.IndexOf(smallRoverPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.S_Rover) ? _tempVehicleClassPackMapping[VehicleClass.S_Rover] : "ImprovedVanilla");
+                        if (smallRoverIndex < 0) smallRoverIndex = 0;
+                        if (ImGui.Combo("##smallRover", ref smallRoverIndex, smallRoverPacks, smallRoverPacks.Length))
+                        {
+                            _tempVehicleClassPackMapping[VehicleClass.S_Rover] = smallRoverPacks[smallRoverIndex];
+                        }
+
+                        ImGui.Spacing();
+
+                        // L_Rover Dropdown
+                        ImGui.Text("Large Rover:");
+                        ImGui.SetNextItemWidth(-1f);
+                        string[] largeRoverPacks = _modManager.AvailablePacks.Keys.ToArray();
+                        int largeRoverIndex = Array.IndexOf(largeRoverPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.L_Rover) ? _tempVehicleClassPackMapping[VehicleClass.L_Rover] : "ImprovedVanilla");
+                        if (largeRoverIndex < 0) largeRoverIndex = 0;
+                        if (ImGui.Combo("##largeRover", ref largeRoverIndex, largeRoverPacks, largeRoverPacks.Length))
+                        {
+                            _tempVehicleClassPackMapping[VehicleClass.L_Rover] = largeRoverPacks[largeRoverIndex];
+                        }
+
+                        ImGui.Spacing();
+                        ImGui.Separator();
+                        ImGui.Spacing();
+
+                        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1f), "Version: 1.4.0");
+                        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1f), "SEENG Engine Sounds");
+
+                        ImGui.Spacing();
+                        ImGui.Separator();
+                        ImGui.Spacing();
+
+                        float settingsButtonWidth = 120f;  // НЕ ТРОГАЙ
+                        float buttonSpacing = (ImGui.GetWindowWidth() - settingsButtonWidth * 2) * 0.5f;
+
+                        ImGui.SetCursorPosX(buttonSpacing);
+                        if (ImGui.Button("Apply", new System.Numerics.Vector2(settingsButtonWidth, 35)))
+                        {
+                            _vehicleClassPackMapping = new Dictionary<VehicleClass, string>(_tempVehicleClassPackMapping);
+                            VehicleClassifier.SetPackMapping(_vehicleClassPackMapping);
+                            MyAPIGateway.Utilities.ShowNotification("Vehicle class addon applied", 3000, MyFontEnum.Green);
+                            _showSettingsWindow = false;
+                            _logic.RestartSoundsWithNewPack(_modManager, _selectedPack);
+                        }
+
+                        ImGui.SameLine();
+                        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - settingsButtonWidth - buttonSpacing);
+                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(settingsButtonWidth, 35)))
+                        {
+                            _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>(_vehicleClassPackMapping);
+                            _showSettingsWindow = false;
+                        }
+                    }
+                    ImGui.End();
+
+
+                    if (!settingsWindowOpen)
+                    {
+                        _showSettingsWindow = false;
+                    }
+                }
+
                 // Volume Setings
                 if (_showVolumeWindow)
                 {
@@ -429,7 +546,7 @@ namespace SEENG_SElauncher.IMGUI
                         ImGui.Spacing();
                         ImGui.Spacing();
                         ImGui.Text("Volume Slider:");
-                        ImGui.SetNextItemWidth(-1f); 
+                        ImGui.SetNextItemWidth(-1f);
                         if (ImGui.SliderFloat("##volumeSlider", ref _volumeValue, 0f, 200f, "%.0f %%"))
                         {
                             _volumeInputText = _volumeValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
@@ -554,7 +671,7 @@ namespace SEENG_SElauncher.IMGUI
                     "1. double click 'client mod loader' in 'instaled plugins\n" +
                     "2. Enable desired seeng sound addons from here\n\n" +
                     "*** mean that this addon loaded clientside or not enabled\n players would need that addon clientloaded too to hear it").X * 0.5f, rightSubY));
-                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1), 
+                ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1),
                     "1. Subscribe and enable seeng addons in your world'\n" +
                     "2. Add [SEENG] tag to a cockpit\n" +
                     "3. Press CTRL + F1, select and engine and press 'Refit Engine'\n" +
@@ -608,24 +725,24 @@ namespace SEENG_SElauncher.IMGUI
                 var buttonWidth = windowSize.X * 0.2500f;
                 var buttonHeight = windowSize.Y * 0.0556f;
                 ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
-               // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
-               // ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
-               // ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
+                // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
+                // ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
+                // ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
                 if (ImGui.Button("Order BigMac(requaiers connection to MacApp)", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
                     MyGuiSandbox.OpenUrlWithFallback("https://www.youtube.com/shorts/_6HzLIJPH2A", "kks");
                 }
                 //ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + windowSize.Y * 0.0185f;
-              // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
+                // ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
                 //ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
                 //ImGui.PushStyleColor(ImGuiCol.ButtonActive, new System.Numerics.Vector4(0.443f, 0.6f, 0.635f, 1.0f));
-               ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
+                ImGui.SetCursorPos(new System.Numerics.Vector2(rightButtonX, rightButtonY));
                 if (ImGui.Button("Report a problem/suggestion [DISCORD]", new System.Numerics.Vector2(buttonWidth, buttonHeight)))
                 {
                     MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
-               // ImGui.PopStyleColor(3);
+                // ImGui.PopStyleColor(3);
                 rightButtonY += buttonHeight + windowSize.Y * 0.0185f;
                 //ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.129f, 0.251f, 0.306f, 1.0f));
                 //ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new System.Numerics.Vector4(0.129f, 0.251f, 0.600f, 1.0f));
@@ -635,7 +752,7 @@ namespace SEENG_SElauncher.IMGUI
                 {
                     MyGuiSandbox.OpenUrlWithFallback("https://discord.gg/bvkhT6wvDm", "kks");
                 }
-               // ImGui.PopStyleColor(3);
+                // ImGui.PopStyleColor(3);
                 // Set Ship Speed
                 if (_showSpeedWindow)
                 {
@@ -746,6 +863,26 @@ namespace SEENG_SElauncher.IMGUI
             while (_editingTransmission.GearRatiosS.Count < target) _editingTransmission.GearRatiosS.Add(2.0f);
             while (_editingTransmission.UpshiftSpeedThresholds.Count < target) _editingTransmission.UpshiftSpeedThresholds.Add(0.50f);
             while (_editingTransmission.DownshiftSpeedThresholds.Count < target) _editingTransmission.DownshiftSpeedThresholds.Add(0.40f);
+        }
+
+        private void InitializeVehicleClassMapping()
+        {
+            _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>();
+
+            foreach (VehicleClass vc in Enum.GetValues(typeof(VehicleClass)))
+            {
+                if (vc == VehicleClass.Unknown) continue;
+
+                if (_vehicleClassPackMapping.ContainsKey(vc))
+                {
+                    _tempVehicleClassPackMapping[vc] = _vehicleClassPackMapping[vc];
+                }
+                else
+                {
+                    string defaultPack = VehicleClassifier.GetDefaultPackPrefix(vc);
+                    _tempVehicleClassPackMapping[vc] = defaultPack;
+                }
+            }
         }
         public void Dispose()
         {

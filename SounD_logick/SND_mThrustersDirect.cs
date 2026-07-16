@@ -10,8 +10,8 @@ namespace SEENG_ES
 {
     public  class SND_mThrustersHandler
     {
-        public static MyEntity3DSoundEmitter _emitter;
-        private static string _currentCue = "";
+        public MyEntity3DSoundEmitter _emitter;
+        private  string _currentCue = "";
 
         private const float MAX_ANGULAR_SPEED = 3.293f; // peak rpm se lkmit
         private const float MIN_ANGULAR_THRESHOLD = 0.050f; // min rpm
@@ -22,8 +22,8 @@ namespace SEENG_ES
         private const float PITCH_MIN = 0.85f;  
         private const float PITCH_MAX = 1.65f;   
 
-        private static float _targetVolume = 0f;
-        private static float _currentVolume = 0f;
+        private float _targetVolume = 0f;
+        private float _currentVolume = 0f;
 
         public  void Start(ref MyEntity3DSoundEmitter emitter, IMyCockpit cockpit, string prefix)
         {

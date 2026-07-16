@@ -6,6 +6,7 @@ using SEENG_SElauncher.SEENG_Managers;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
+using System.Collections.Generic;
 
 namespace SEENG_ES
 {
@@ -14,6 +15,7 @@ namespace SEENG_ES
         private readonly SessionChecker _sessionChecker = new SessionChecker();
         private readonly Dictionary<long, ShipSoundSession> _activeSessions = new Dictionary<long, ShipSoundSession>();
         private readonly HashSet<IMyEntity> _entitiesBuffer = new HashSet<IMyEntity>();
+        private readonly Dictionary<long, long> _defaultSessionGrid = new Dictionary<long, long>();
         private int _scanCounter = 0;
 
         public void Init(SEENG_modManager modManager)
@@ -33,12 +35,29 @@ namespace SEENG_ES
             foreach (var kvp in _activeSessions)
             {
                 var session = kvp.Value;
-
-                if (session.Cockpit == null || session.Cockpit.Closed || !_sessionChecker.HasSEENGTag(session.Cockpit))
+                long sessionId = kvp.Key;
+                if (session.Cockpit == null || session.Cockpit.Closed)
                 {
-                    _toRemove.Add(kvp.Key);
+                    _toRemove.Add(sessionId);
                     continue;
                 }
+
+                if (!session.IsDefaultSession && !_sessionChecker.HasSEENGTag(session.Cockpit))
+                {
+                    _toRemove.Add(sessionId);
+                    continue;
+                }
+
+                if (session.IsDefaultSession)
+                {
+                    long gridId = session.Cockpit.CubeGrid?.EntityId ?? 0;
+                    if (gridId == 0 || !_defaultSessionGrid.ContainsKey(gridId) || _defaultSessionGrid[gridId] != sessionId)
+                    {
+                        _toRemove.Add(sessionId);
+                        continue;
+                    }
+                }
+
                 session.Update(modManager);
             }
 
@@ -48,6 +67,17 @@ namespace SEENG_ES
                 {
                     _activeSessions[id].Dispose();
                     _activeSessions.Remove(id);
+                    long gridToRemove = -1;
+                    foreach (var kvp in _defaultSessionGrid)
+                    {
+                        if (kvp.Value == id)
+                        {
+                            gridToRemove = kvp.Key;
+                            break;
+                        }
+                    }
+                    if (gridToRemove != -1)
+                        _defaultSessionGrid.Remove(gridToRemove);
                 }
             }
         }
@@ -59,17 +89,30 @@ namespace SEENG_ES
             MyAPIGateway.Entities.GetEntities(_entitiesBuffer);
             var listenerPos = MyAPIGateway.Session.Camera?.WorldMatrix.Translation ?? Vector3D.Zero;
 
+            var taggedGridIds = new HashSet<long>();
+            foreach (var kvp in _activeSessions)
+            {
+                if (!kvp.Value.IsDefaultSession && kvp.Value.Cockpit?.CubeGrid != null && !kvp.Value.Cockpit.Closed)
+                {
+                    taggedGridIds.Add(kvp.Value.Cockpit.CubeGrid.EntityId);
+                }
+            }
+
             foreach (var entity in _entitiesBuffer)
             {
                 var grid = entity as IMyCubeGrid;
                 if (grid == null || grid.Physics == null) continue;
 
-                if (Vector3D.DistanceSquared(grid.GetPosition(), listenerPos) > 6500 * 6500) //sound sync dist !!!!!!
+                if (Vector3D.DistanceSquared(grid.GetPosition(), listenerPos) > 6500 * 6500)
                     continue;
 
+                long gridId = grid.EntityId;
                 var slimBlocks = new List<IMySlimBlock>();
                 grid.GetBlocks(slimBlocks, b => b.FatBlock is IMyCockpit);
 
+                if (slimBlocks.Count == 0) continue;
+
+                bool hasTaggedCockpit = false;
                 foreach (var slim in slimBlocks)
                 {
                     var cockpit = slim.FatBlock as IMyCockpit;
@@ -77,18 +120,101 @@ namespace SEENG_ES
 
                     if (_sessionChecker.HasSEENGTag(cockpit))
                     {
+                        hasTaggedCockpit = true;
+
                         if (!_activeSessions.ContainsKey(cockpit.EntityId))
                         {
                             string prefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, modManager.CurrentPackConfig.Prefix);
-                            PackConfig config = modManager.AvailablePacks.ContainsKey(prefix)
-                        ? modManager.AvailablePacks[prefix]
-                        : modManager.CurrentPackConfig;
-                            var session = new ShipSoundSession(cockpit, config);
-                            session.Handler.RestartAll(cockpit, prefix, session.Managers.ThrustManager, session.Managers.SpeedManager, session.Managers.RotationManager, session.Managers.ThrottleThrusterManager, session.Managers.PowerManager, session.Managers.BlockStateManager, session.TransmissionConfig);
-                            _activeSessions.Add(cockpit.EntityId, session);
+                            PackConfig packConfig = modManager.AvailablePacks.ContainsKey(prefix)
+                                ? modManager.AvailablePacks[prefix]
+                                : modManager.CurrentPackConfig;
+                            var newSession = new ShipSoundSession(cockpit, packConfig);
+                            newSession.Handler.RestartAll(cockpit, prefix, newSession.Managers, newSession.TransmissionConfig);
+                            _activeSessions.Add(cockpit.EntityId, newSession);
                         }
                     }
                 }
+
+                if (hasTaggedCockpit)
+                {
+                    if (_defaultSessionGrid.ContainsKey(gridId))
+                    {
+                        long oldSessionId = _defaultSessionGrid[gridId];
+                        _defaultSessionGrid.Remove(gridId);
+                        if (_activeSessions.ContainsKey(oldSessionId))
+                        {
+                            _activeSessions[oldSessionId].Dispose();
+                            _activeSessions.Remove(oldSessionId);
+                        }
+                    }
+                    continue;
+                }
+
+                List<IMyThrust> thrusters;
+                List<IMyMotorSuspension> suspensions;
+                VehicleClass vehicleClass = VehicleClassifier.Classify(grid, out thrusters, out suspensions);
+
+                if (vehicleClass == VehicleClass.Unknown)
+                {
+                    if (_defaultSessionGrid.ContainsKey(gridId))
+                    {
+                        long oldSessionId = _defaultSessionGrid[gridId];
+                        _defaultSessionGrid.Remove(gridId);
+                        if (_activeSessions.ContainsKey(oldSessionId))
+                        {
+                            _activeSessions[oldSessionId].Dispose();
+                            _activeSessions.Remove(oldSessionId);
+                        }
+                    }
+                    continue;
+                }
+
+                if (_defaultSessionGrid.ContainsKey(gridId))
+                {
+                    long existingSessionId = _defaultSessionGrid[gridId];
+                    if (_activeSessions.ContainsKey(existingSessionId))
+                    {
+                        var existingSession = _activeSessions[existingSessionId];
+                        if (existingSession.Cockpit != null && !existingSession.Cockpit.Closed && !existingSession.Cockpit.MarkedForClose)
+                        {
+                            existingSession.SetGridBlocks(thrusters, suspensions);
+                            continue;
+                        }
+                        else
+                        {
+                            _activeSessions[existingSessionId].Dispose();
+                            _activeSessions.Remove(existingSessionId);
+                            _defaultSessionGrid.Remove(gridId);
+                        }
+                    }
+                    else
+                    {
+                        _defaultSessionGrid.Remove(gridId);
+                    }
+                }
+                IMyCockpit primaryCockpit = null;
+                foreach (var slim in slimBlocks)
+                {
+                    var cockpit = slim.FatBlock as IMyCockpit;
+                    if (cockpit != null && !cockpit.Closed && !cockpit.MarkedForClose)
+                    {
+                        primaryCockpit = cockpit;
+                        break;
+                    }
+                }
+
+                if (primaryCockpit == null) continue;
+
+                string defaultPrefix = VehicleClassifier.GetDefaultPackPrefix(vehicleClass);
+                PackConfig defaultPackConfig = modManager.AvailablePacks.ContainsKey(defaultPrefix)
+                    ? modManager.AvailablePacks[defaultPrefix]
+                    : modManager.CurrentPackConfig;
+
+                var defaultSession = new ShipSoundSession(primaryCockpit, defaultPackConfig, vehicleClass, isDefault: true);
+                defaultSession.SetGridBlocks(thrusters, suspensions);
+                defaultSession.Handler.RestartAll(primaryCockpit, defaultPrefix, defaultSession.Managers, defaultSession.TransmissionConfig);
+                _activeSessions.Add(primaryCockpit.EntityId, defaultSession);
+                _defaultSessionGrid[gridId] = primaryCockpit.EntityId;
             }
         }
 
@@ -101,21 +227,22 @@ namespace SEENG_ES
             modManager.CurrentPackConfig = modManager.AvailablePacks[newPrefix];
             MyAPIGateway.Utilities.InvokeOnGameThread(() =>
             {
-                var validCockpits = new List<IMyCockpit>();
+                var taggedCockpits = new List<IMyCockpit>();
                 foreach (var session in _activeSessions.Values)
                 {
-                    if (session.Cockpit != null && !session.Cockpit.Closed && !session.Cockpit.MarkedForClose)
+                    if (!session.IsDefaultSession && session.Cockpit != null && !session.Cockpit.Closed && !session.Cockpit.MarkedForClose)
                     {
-                        validCockpits.Add(session.Cockpit);
+                        taggedCockpits.Add(session.Cockpit);
                     }
                     session.Handler.StopAll();
                     session.Dispose();
                 }
 
                 _activeSessions.Clear();
+                _defaultSessionGrid.Clear();
                 _entitiesBuffer.Clear();
 
-                foreach (var cockpit in validCockpits)
+                foreach (var cockpit in taggedCockpits)
                 {
                     string shipPrefix = SEENG_aConfig.GetPackPrefixFromCustomData(cockpit, newPrefix);
                     if (!modManager.AvailablePacks.TryGetValue(shipPrefix, out PackConfig shipConfig))
@@ -135,19 +262,10 @@ namespace SEENG_ES
                     }
 
                     var newSession = new ShipSoundSession(cockpit, shipConfig);
-                    newSession.Handler.RestartAll(
-                 cockpit,
-                 shipPrefix,
-                 newSession.Managers.ThrustManager,
-                 newSession.Managers.SpeedManager,
-                 newSession.Managers.RotationManager,
-                 newSession.Managers.ThrottleThrusterManager,
-                 newSession.Managers.PowerManager,
-                 newSession.Managers.BlockStateManager,
-                 newSession.TransmissionConfig
-             );
+                    newSession.Handler.RestartAll(cockpit, shipPrefix, newSession.Managers, newSession.TransmissionConfig);
                     _activeSessions.Add(cockpit.EntityId, newSession);
                 }
+
                 ScanNearbyShips(modManager);
                 _scanCounter = 160;
             });

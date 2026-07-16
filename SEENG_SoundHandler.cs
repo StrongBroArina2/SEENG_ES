@@ -48,10 +48,10 @@ namespace SEENG_ES
 
         public SND_CT_EngineHandler GetCTEngineHandler() => _ctEngineHandler;
         public SND_CTS_EngineHandler GetCTSEngineHandler() => _ctsEngineHandler;
-        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, SEENG_GridPowerManager powerManager, ThrottleThrusterManager throttleManager, PackConfig config, SEENG_TransmissionConfig transmissionConfig, SEENG_BlockStateManager blockManager)
+        public void UpdateAllSounds(IMyCockpit cockpit, string prefix, ManagersUpdater managers, PackConfig config)
         {
-            if (cockpit == null) return;
-            float normalizedSpeed = speedManager.NormalizedSpeed;
+            if (cockpit == null || managers == null) return;
+            float normalizedSpeed = managers.SpeedManager.NormalizedSpeed;
 
             //1.0
             SEENG_enginesParametrs.UpdatePitchForEmitter(_engineLoopEmitter, normalizedSpeed, config.MaxEnginePitchShift);
@@ -63,20 +63,20 @@ namespace SEENG_ES
             _stationaryAmbienceHandler.UpdateStationaryAmbienceVolume(_stationaryAmbienceEmitter, normalizedSpeed);
 
             //1.2
-            _mThrustersHandler.Update(_mThrustersEmitter, rotationManager, speedManager);
-            _mainThrusterHandler.Update(cockpit, thrustManager);
-            _maneuverThrustersHandler.Update(cockpit, rotationManager, speedManager);
-            _acdcAdvHandler.Update(cockpit, speedManager);
-            _speedUpDown.Update(cockpit, speedManager);
+            _mThrustersHandler.Update(_mThrustersEmitter, managers.RotationManager, managers.SpeedManager);
+            _mainThrusterHandler.Update(cockpit, managers.ThrustManager);
+            _maneuverThrustersHandler.Update(cockpit, managers.RotationManager, managers.SpeedManager);
+            _acdcAdvHandler.Update(cockpit, managers.SpeedManager, config.MaxACDCAdvPitchSemitones);
+            _speedUpDown.Update(cockpit, managers.SpeedManager);
 
             //1.3
-            _cEngineHandler.Update(thrustManager, speedManager);
-            _ctEngineHandler.Update(thrustManager, speedManager, throttleManager);
-            _ctsEngineHandler.Update(thrustManager, speedManager, throttleManager);
-            _cTracksHandler.Update(speedManager);
-            _cWheelsHandler.Update(speedManager);
+            _cEngineHandler.Update(managers.ThrustManager, managers.SpeedManager);
+            _ctEngineHandler.Update(managers.ThrustManager, managers.SpeedManager, managers.ThrottleThrusterManager);
+            _ctsEngineHandler.Update(managers.ThrustManager, managers.SpeedManager, managers.ThrottleThrusterManager);
+            _cTracksHandler.Update(managers.SpeedManager);
+            _cWheelsHandler.Update(managers.SpeedManager);
 
-           
+            
              //_magLockHandler.Update(blockManager);
            // _RotorHandler.Update(blockManager);
            // _PistonLockHandler.Update(blockManager);
@@ -90,7 +90,7 @@ namespace SEENG_ES
             UpdateEmitter3D(_constantAmbienceEmitter, cockpit);
             UpdateEmitter3D(_mThrustersEmitter, cockpit);
 
-            _engineLoopPowerHandler.Update(_engineLoopPowerEmitter, powerManager.PowerLoadPercent, 12f);
+            _engineLoopPowerHandler.Update(_engineLoopPowerEmitter, managers.PowerManager.PowerLoadPercent, 12f);
 
             var emitters = new[]
             {
@@ -110,7 +110,7 @@ namespace SEENG_ES
 
         }
 
-        public void RestartAll(IMyCockpit cockpit, string prefix, ThrustManager thrustManager, SpeedManager speedManager, RotationManager rotationManager, ThrottleThrusterManager throttleManager, SEENG_GridPowerManager powerManager, SEENG_BlockStateManager blockStateManager, SEENG_TransmissionConfig transmissionConfig)
+        public void RestartAll(IMyCockpit cockpit, string prefix, ManagersUpdater managers, SEENG_TransmissionConfig transmissionConfig)
         {
             StopAll();Dispose();if (cockpit == null || cockpit.MarkedForClose || cockpit.Closed) return;
             void DIENT(string baseName, Action startAction) // DO I EVEN NEED this handler on my pack

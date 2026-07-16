@@ -20,7 +20,7 @@ namespace SEENG_ES
         private float _deccelVolume = 0f;
 
         private const float FADE_STEP = 1f / (60f * 1.5f);
-        private const float MAX_PITCH_SEMITONES = 10f;
+        private float _maxPitchSemitones = 10f;
 
         private float _forcedFadeTimer = 0f;
         private const float MIN_FADE_TIME = 5.3f;
@@ -41,8 +41,9 @@ namespace SEENG_ES
             _deccelEmitter.Force3D = true;
         }
 
-        public void Update(IMyCockpit cockpit, SpeedManager speedManager)
+        public void Update(IMyCockpit cockpit, SpeedManager speedManager, float maxPitchSemitones)
         {
+            _maxPitchSemitones = maxPitchSemitones;
             if (cockpit?.CubeGrid?.Physics == null || _accelEmitter == null) return;
 
             float currentSpeed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
@@ -80,7 +81,7 @@ namespace SEENG_ES
                 _forcedFadeTimer = 0f;
             }
 
-            float targetPitch = (float)Math.Pow(2, (normSpeed * MAX_PITCH_SEMITONES) / 12.0);
+            float targetPitch = (float)Math.Pow(2, (normSpeed * _maxPitchSemitones) / 12.0);
 
             UpdateLayer(_accelEmitter, "SeengACDCacc", _accelVolume, targetPitch);
             UpdateLayer(_deccelEmitter, "SeengACDCdcc", _deccelVolume, targetPitch);

@@ -10,6 +10,8 @@ using VRage.Game.ModAPI;
 using VRage.Input;
 using VRageMath;
 using static SEENG_SElauncher.SEENG_Managers.SpeedManager;
+using IMyMotorSuspension = Sandbox.ModAPI.IMyMotorSuspension;
+using IMyThrust = Sandbox.ModAPI.IMyThrust;
 
 namespace SEENG_SElauncher.SEENG_Managers
 {
@@ -21,7 +23,9 @@ namespace SEENG_SElauncher.SEENG_Managers
         private readonly ThrottleThrusterManager _throttleThrusterManager;
         private readonly SEENG_GridPowerManager _powerManager;
         private readonly SEENG_BlockStateManager _blockStateManager;
-        
+        private readonly SEENG_AtmosphereManager _atmosphereManager;
+        public List<IMyThrust> GridThrusters { get; private set; } = new List<IMyThrust>();
+        public List<IMyMotorSuspension> GridSuspensions { get; private set; } = new List<IMyMotorSuspension>();
 
         public ManagersUpdater(SpeedManager speedManager, ThrustManager thrustManager)
         {
@@ -31,6 +35,13 @@ namespace SEENG_SElauncher.SEENG_Managers
             _throttleThrusterManager = new ThrottleThrusterManager();
             _powerManager = new SEENG_GridPowerManager();
             _blockStateManager = new SEENG_BlockStateManager();
+            _atmosphereManager = new SEENG_AtmosphereManager();
+        }
+
+        public void SetGridBlocks(List<IMyThrust> thrusters, List<IMyMotorSuspension> suspensions)
+        {
+            GridThrusters = thrusters ?? new List<IMyThrust>();
+            GridSuspensions = suspensions ?? new List<IMyMotorSuspension>();
         }
 
         public void Update(IMyCockpit cockpit)
@@ -40,6 +51,7 @@ namespace SEENG_SElauncher.SEENG_Managers
             _rotationManager.Update(cockpit);
             _powerManager.Update(cockpit);
             _blockStateManager.Update(cockpit);
+            _atmosphereManager.Update(cockpit);
             if (cockpit != null)
             {
                 _speedManager.Update(cockpit);
@@ -56,6 +68,7 @@ namespace SEENG_SElauncher.SEENG_Managers
         public ThrottleThrusterManager ThrottleThrusterManager => _throttleThrusterManager;
         public SEENG_GridPowerManager PowerManager => _powerManager;
         public SEENG_BlockStateManager BlockStateManager => _blockStateManager;
+        public SEENG_AtmosphereManager AtmosphereManager => _atmosphereManager;
 
         public void Reset()
         {
@@ -64,6 +77,9 @@ namespace SEENG_SElauncher.SEENG_Managers
             _speedManager.SetNormalizedSpeed(0f);
             _powerManager.Reset();
             _blockStateManager.Reset();
+            _atmosphereManager.Reset();
+            GridThrusters.Clear();
+            GridSuspensions.Clear();
         }
     }
 
