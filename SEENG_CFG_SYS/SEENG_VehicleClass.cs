@@ -66,10 +66,10 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
 
             switch (vehicleClass)
             {
-                case VehicleClass.S_Ship: return "ImprovedVanilla";
-                case VehicleClass.L_Ship: return "ImprovedVanilla";
-                case VehicleClass.S_Rover: return "ImprovedVanilla";
-                case VehicleClass.L_Rover: return "ImprovedVanilla";
+                case VehicleClass.S_Ship: return "VSMALL";
+                case VehicleClass.L_Ship: return "VLARGE";
+                case VehicleClass.S_Rover: return "VRover";
+                case VehicleClass.L_Rover: return "VRover";
                 default: return "ImprovedVanilla";
             }
         }
