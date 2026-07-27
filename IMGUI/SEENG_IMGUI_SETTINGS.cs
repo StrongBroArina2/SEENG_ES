@@ -148,7 +148,7 @@ namespace SEENG_SElauncher.IMGUI
                 var packKeys = _modManager.AvailablePacks.Keys.ToArray();
 
                 // S_Ship
-                DrawVehicleClassRow("Small Ship:", VehicleClass.S_Ship, "##smallShip", packKeys);
+                DrawVehicleClassRow("Small Ship:", VehicleClass.S_Ship, "##smallShip", packKeys); 
 
                 ImGui.Spacing();
 
@@ -273,7 +273,24 @@ namespace SEENG_SElauncher.IMGUI
         {
             SaveTempToProfile(_selectedProfileIndex);
             SEENG_CFG_Settings.CurrentProfileIndex = _selectedProfileIndex;
-            SEENG_CFG_Settings.ApplyCurrentProfile();
+            var activeSpeedMapping = new Dictionary<VehicleClass, float>();
+            foreach (VehicleClass vc in Enum.GetValues(typeof(VehicleClass)))
+            {
+                if (vc == VehicleClass.Unknown) continue;
+
+                if (_tempUseWorldSpeed)
+                {
+                    activeSpeedMapping[vc] = VehicleClassifier.GetWorldMaxSpeed(vc);
+                }
+                else
+                {
+                    activeSpeedMapping[vc] = _tempSpeedMapping.ContainsKey(vc)
+                        ? _tempSpeedMapping[vc]
+                        : VehicleClassifier.GetDefaultMaxSpeed(vc);
+                }
+            }
+            VehicleClassifier.SetPackMapping(_tempPackMapping);
+            VehicleClassifier.SetSpeedMapping(activeSpeedMapping);
             SEENG_CFG_Settings.Save();
 
             MyAPIGateway.Utilities.ShowNotification("Settings applied and saved!", 3000, MyFontEnum.Green);
