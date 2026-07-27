@@ -16,6 +16,7 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
     public static class VehicleClassifier
     {
         private static Dictionary<VehicleClass, string> _customPackMapping = new Dictionary<VehicleClass, string>();
+        private static Dictionary<VehicleClass, float> _customSpeedMapping = new Dictionary<VehicleClass, float>();
 
         public static VehicleClass Classify(IMyCubeGrid grid, out List<IMyThrust> thrusters, out List<IMyMotorSuspension> suspensions)
         {
@@ -83,5 +84,64 @@ namespace SEENG_SElauncher.SEENG_CFG_SYS
         {
             _customPackMapping.Clear();
         }
+
+        public static void SetSpeedMapping(Dictionary<VehicleClass, float> mapping)
+        {
+            _customSpeedMapping = new Dictionary<VehicleClass, float>(mapping);
+        }
+
+        public static void ClearSpeedMapping()
+        {
+            _customSpeedMapping.Clear();
+        }
+
+        public static float GetDefaultMaxSpeed(VehicleClass vehicleClass)
+        {
+            if (_customSpeedMapping.ContainsKey(vehicleClass))
+            {
+                return _customSpeedMapping[vehicleClass];
+            }
+
+            switch (vehicleClass)
+            {
+                case VehicleClass.S_Ship: return 100f;
+                case VehicleClass.L_Ship: return 100f;
+                case VehicleClass.S_Rover: return 30f;
+                case VehicleClass.L_Rover: return 30f;
+                default: return 120f;
+            }
+        }
+
+        public static float GetWorldMaxSpeed(VehicleClass vehicleClass)
+        {
+            if (MyAPIGateway.Session == null) return GetDefaultMaxSpeed(vehicleClass);
+
+            try
+            {
+                var envDef = Sandbox.Definitions.MyDefinitionManager.Static?.EnvironmentDefinition;
+
+                float smallSpeed = envDef?.SmallShipMaxSpeed ?? 100f;
+                float largeSpeed = envDef?.LargeShipMaxSpeed ?? 100f;
+
+                switch (vehicleClass)
+                {
+                    case VehicleClass.S_Ship:
+                        return smallSpeed;
+                    case VehicleClass.L_Ship:
+                        return largeSpeed;
+                    case VehicleClass.S_Rover:
+                        return smallSpeed / 3f;
+                    case VehicleClass.L_Rover:
+                        return largeSpeed / 3f;
+                    default:
+                        return 120f;
+                }
+            }
+            catch
+            {
+                return GetDefaultMaxSpeed(vehicleClass);
+            }
+        }
     }
+   
 }

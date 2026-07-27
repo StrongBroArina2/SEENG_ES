@@ -37,7 +37,9 @@ namespace SEENG_SElauncher
             TransmissionConfig = SEENG_aConfig.GetTransmissionConfig(cockpit, packConfig.Transmission);
             Handler = new SoundHandler();
             BlockState = new SEENG_BlockStateManager();
-            float maxSpeed = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
+            float maxSpeed = isDefault
+                ? SEENG_CFG_SYS.VehicleClassifier.GetDefaultMaxSpeed(vehicleClass)
+                : SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
             Managers = new ManagersUpdater(new SpeedManager(maxSpeed), new ThrustManager());
 
             var ctHandler = Handler.GetCTEngineHandler();
@@ -98,9 +100,9 @@ namespace SEENG_SElauncher
             PackConfig shipConfig = modManager.AvailablePacks.ContainsKey(ActivePrefix)
                             ? modManager.AvailablePacks[ActivePrefix]
                             : modManager.CurrentPackConfig;
-            
+
             BlockState.Update(Cockpit);
-            Managers.Update(Cockpit);        
+            Managers.Update(Cockpit, IsDefaultSession, ClassType);
             Handler.UpdateAllSounds(Cockpit, ActivePrefix, Managers, shipConfig);
         }
 

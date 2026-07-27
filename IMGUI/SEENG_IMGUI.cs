@@ -47,16 +47,15 @@ namespace SEENG_SElauncher.IMGUI
         private SEENG_TransmissionConfig _editingTransmission = null;
         private int _editingGearCount = 5;
         private int _editingMode = 1;
-        private bool _showSettingsWindow = false;
-        private bool _debugMode = false;
-        private Dictionary<VehicleClass, string> _vehicleClassPackMapping = new Dictionary<VehicleClass, string>();
-        private Dictionary<VehicleClass, string> _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>();
+        private SEENG_IMGUI_SETTINGS _settingsWindow;
         public SEENGRenderComponent(SEENG_modManager modManager, SLogic logic, IImGuiImageService imageService = null)
         {
             _modManager = modManager ?? throw new ArgumentNullException(nameof(modManager));
             _logic = logic ?? throw new ArgumentNullException(nameof(logic));
             _imageService = imageService ?? MySandboxGame.Services.GetRequiredService<IImGuiImageService>();
             _newsService = new SEENG_News(_modManager);
+            _settingsWindow = new SEENG_IMGUI_SETTINGS(modManager, logic);
+            SEENG_CFG_Settings.Load();
         }
         public void OnFrame()
         {
@@ -250,8 +249,7 @@ namespace SEENG_SElauncher.IMGUI
                 ImGui.SetCursorPos(new System.Numerics.Vector2(listboxCenterX + listboxSize.X * 0.0f, settingsOffsetY));
                 if (ImGui.Button("Settings", new System.Numerics.Vector2(subButtonWidth, subButtonHeight)))
                 {
-                    _showSettingsWindow = true;
-                    InitializeVehicleClassMapping();
+                    _settingsWindow.Toggle();
                 }
 
                 // ==================== TRANSMISSION SETTINGS WINDOW
@@ -422,112 +420,7 @@ namespace SEENG_SElauncher.IMGUI
                         _showTransmissionWindow = false;
                 }
 
-
-
-
-                // ==================== SETTINGS WINDOW
-                if (_showSettingsWindow)
-                {
-                    ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X * 0.5f, displaySize.Y * 0.5f), ImGuiCond.Always, new System.Numerics.Vector2(0.5f, 0.5f));
-                    ImGui.SetNextWindowSize(new System.Numerics.Vector2(750, 900), ImGuiCond.Once);
-
-                    bool settingsWindowOpen = true;
-                    if (ImGui.Begin("Settings", ref settingsWindowOpen, ImGuiWindowFlags.NoResize))
-                    {
-                        ImGui.Text("Vehicle Class Configuration");
-                        ImGui.Separator();
-                        ImGui.Spacing();
-
-                        // S_Ship Dropdown
-                        ImGui.Text("Small Ship:");
-                        ImGui.SetNextItemWidth(-1f);
-                        string[] smallShipPacks = _modManager.AvailablePacks.Keys.ToArray();
-                        int smallShipIndex = Array.IndexOf(smallShipPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.S_Ship) ? _tempVehicleClassPackMapping[VehicleClass.S_Ship] : "ImprovedVanilla");
-                        if (smallShipIndex < 0) smallShipIndex = 0;
-                        if (ImGui.Combo("##smallShip", ref smallShipIndex, smallShipPacks, smallShipPacks.Length))
-                        {
-                            _tempVehicleClassPackMapping[VehicleClass.S_Ship] = smallShipPacks[smallShipIndex];
-                        }
-
-                        ImGui.Spacing();
-
-                        // L_Ship Dropdown
-                        ImGui.Text("Large Ship:");
-                        ImGui.SetNextItemWidth(-1f);
-                        string[] largeShipPacks = _modManager.AvailablePacks.Keys.ToArray();
-                        int largeShipIndex = Array.IndexOf(largeShipPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.L_Ship) ? _tempVehicleClassPackMapping[VehicleClass.L_Ship] : "ImprovedVanilla");
-                        if (largeShipIndex < 0) largeShipIndex = 0;
-                        if (ImGui.Combo("##largeShip", ref largeShipIndex, largeShipPacks, largeShipPacks.Length))
-                        {
-                            _tempVehicleClassPackMapping[VehicleClass.L_Ship] = largeShipPacks[largeShipIndex];
-                        }
-
-                        ImGui.Spacing();
-
-                        // S_Rover Dropdown
-                        ImGui.Text("Small Rover:");
-                        ImGui.SetNextItemWidth(-1f);
-                        string[] smallRoverPacks = _modManager.AvailablePacks.Keys.ToArray();
-                        int smallRoverIndex = Array.IndexOf(smallRoverPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.S_Rover) ? _tempVehicleClassPackMapping[VehicleClass.S_Rover] : "ImprovedVanilla");
-                        if (smallRoverIndex < 0) smallRoverIndex = 0;
-                        if (ImGui.Combo("##smallRover", ref smallRoverIndex, smallRoverPacks, smallRoverPacks.Length))
-                        {
-                            _tempVehicleClassPackMapping[VehicleClass.S_Rover] = smallRoverPacks[smallRoverIndex];
-                        }
-
-                        ImGui.Spacing();
-
-                        // L_Rover Dropdown
-                        ImGui.Text("Large Rover:");
-                        ImGui.SetNextItemWidth(-1f);
-                        string[] largeRoverPacks = _modManager.AvailablePacks.Keys.ToArray();
-                        int largeRoverIndex = Array.IndexOf(largeRoverPacks, _tempVehicleClassPackMapping.ContainsKey(VehicleClass.L_Rover) ? _tempVehicleClassPackMapping[VehicleClass.L_Rover] : "ImprovedVanilla");
-                        if (largeRoverIndex < 0) largeRoverIndex = 0;
-                        if (ImGui.Combo("##largeRover", ref largeRoverIndex, largeRoverPacks, largeRoverPacks.Length))
-                        {
-                            _tempVehicleClassPackMapping[VehicleClass.L_Rover] = largeRoverPacks[largeRoverIndex];
-                        }
-
-                        ImGui.Spacing();
-                        ImGui.Separator();
-                        ImGui.Spacing();
-
-                        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1f), "Version: 1.4.0");
-                        ImGui.TextColored(new System.Numerics.Vector4(0.8f, 0.8f, 0.8f, 1f), "SEENG Engine Sounds");
-
-                        ImGui.Spacing();
-                        ImGui.Separator();
-                        ImGui.Spacing();
-
-                        float settingsButtonWidth = 120f;  // НЕ ТРОГАЙ
-                        float buttonSpacing = (ImGui.GetWindowWidth() - settingsButtonWidth * 2) * 0.5f;
-
-                        ImGui.SetCursorPosX(buttonSpacing);
-                        if (ImGui.Button("Apply", new System.Numerics.Vector2(settingsButtonWidth, 35)))
-                        {
-                            _vehicleClassPackMapping = new Dictionary<VehicleClass, string>(_tempVehicleClassPackMapping);
-                            VehicleClassifier.SetPackMapping(_vehicleClassPackMapping);
-                            MyAPIGateway.Utilities.ShowNotification("Vehicle class addon applied", 3000, MyFontEnum.Green);
-                            _showSettingsWindow = false;
-                            _logic.RestartSoundsWithNewPack(_modManager, _selectedPack);
-                        }
-
-                        ImGui.SameLine();
-                        ImGui.SetCursorPosX(ImGui.GetWindowWidth() - settingsButtonWidth - buttonSpacing);
-                        if (ImGui.Button("Cancel", new System.Numerics.Vector2(settingsButtonWidth, 35)))
-                        {
-                            _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>(_vehicleClassPackMapping);
-                            _showSettingsWindow = false;
-                        }
-                    }
-                    ImGui.End();
-
-
-                    if (!settingsWindowOpen)
-                    {
-                        _showSettingsWindow = false;
-                    }
-                }
+                _settingsWindow.OnFrame();
 
                 // Volume Setings
                 if (_showVolumeWindow)
@@ -578,6 +471,9 @@ namespace SEENG_SElauncher.IMGUI
                         if (ImGui.Button("Apply", new System.Numerics.Vector2(volButtonWidth, 35)))
                         {
                             SEENG_VolumeManager1.SetVolume(_volumeValue);
+                            var profile = SEENG_CFG_Settings.CurrentProfile;
+                            profile.Volume = _volumeValue;
+                            SEENG_CFG_Settings.Save();
                             Sandbox.ModAPI.MyAPIGateway.Utilities.ShowNotification($"Volume set to {_volumeValue:0} %", 3000);
 
                             _showVolumeWindow = false;
@@ -865,25 +761,6 @@ namespace SEENG_SElauncher.IMGUI
             while (_editingTransmission.DownshiftSpeedThresholds.Count < target) _editingTransmission.DownshiftSpeedThresholds.Add(0.40f);
         }
 
-        private void InitializeVehicleClassMapping()
-        {
-            _tempVehicleClassPackMapping = new Dictionary<VehicleClass, string>();
-
-            foreach (VehicleClass vc in Enum.GetValues(typeof(VehicleClass)))
-            {
-                if (vc == VehicleClass.Unknown) continue;
-
-                if (_vehicleClassPackMapping.ContainsKey(vc))
-                {
-                    _tempVehicleClassPackMapping[vc] = _vehicleClassPackMapping[vc];
-                }
-                else
-                {
-                    string defaultPack = VehicleClassifier.GetDefaultPackPrefix(vc);
-                    _tempVehicleClassPackMapping[vc] = defaultPack;
-                }
-            }
-        }
         public void Dispose()
         {
         }

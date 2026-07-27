@@ -44,7 +44,7 @@ namespace SEENG_SElauncher.SEENG_Managers
             GridSuspensions = suspensions ?? new List<IMyMotorSuspension>();
         }
 
-        public void Update(IMyCockpit cockpit)
+        public void Update(IMyCockpit cockpit, bool isDefault = false, VehicleClass vehicleClass = VehicleClass.Unknown)
         {
             _thrustManager.Update(cockpit);
             _throttleThrusterManager.Update(cockpit);
@@ -52,9 +52,10 @@ namespace SEENG_SElauncher.SEENG_Managers
             _powerManager.Update(cockpit);
             _blockStateManager.Update(cockpit);
             _atmosphereManager.Update(cockpit);
+
             if (cockpit != null)
             {
-                _speedManager.Update(cockpit);
+                _speedManager.Update(cockpit, isDefault, vehicleClass);
             }
             else
             {
@@ -187,14 +188,13 @@ namespace SEENG_SElauncher.SEENG_Managers
                 LocalAngularVelocity = Vector3.Zero;
             }
         }
-        public void Update(IMyCockpit cockpit)
+        public void Update(IMyCockpit cockpit, bool isDefault = false, VehicleClass vehicleClass = VehicleClass.Unknown)
         {
             if (cockpit?.CubeGrid?.Physics == null) return;
 
-            float currentMaxFromData = SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
-            MaxSpeed = currentMaxFromData;
-
-            
+            MaxSpeed = isDefault
+                ? VehicleClassifier.GetDefaultMaxSpeed(vehicleClass)
+                : SEENG_aConfig.GetCurrentMaxSpeedFromCustomData(cockpit);
 
             var grid = cockpit.CubeGrid;
             float currentTime = (float)(MySandboxGame.TotalGamePlayTimeInMilliseconds / 1000.0); // max speed update!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -205,8 +205,6 @@ namespace SEENG_SElauncher.SEENG_Managers
                 LastNormalizedSpeed = 0f;
                 return;
             }
-
-            
 
             float speed = (float)cockpit.CubeGrid.Physics.LinearVelocity.Length();
             SetNormalizedSpeed(MathHelper.Clamp(speed / MaxSpeed, 0f, 1f));
